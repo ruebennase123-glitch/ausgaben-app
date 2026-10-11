@@ -185,7 +185,7 @@ console.log('✓ Bezeichnung Gemeinsam editierbar')
   assert.equal(m.transactions[0].personId, 'p1')
   assert.equal(m.settings.persons[0].name, 'Max')
   console.log('✓ Migration alter Daten (joint ergänzt, Buchungen unverändert)')
-  // joint entries yesterday + today -> shared streak 2 (day -2 by p1 => 3), Julian 0 (gap), Sarah 0
+  // joint entries yesterday + today -> shared streak 3 (incl. p1 on day -2); per-person streaks stay 0
   m.transactions.push(tx(-1, 'joint'), tx(0, 'joint'))
   await p2.evaluate((j) => localStorage.setItem('ausgaben-app:v1', j), JSON.stringify(m))
   await p2.reload()
