@@ -1,0 +1,47 @@
+{
+  "name": "Haushaltsbuch – Ausgaben zu zweit",
+  "short_name": "Haushaltsbuch",
+  "description": "Gemeinsam Ausgaben erfassen, Budgets im Blick behalten und zusammen sparen.",
+  "lang": "de-DE",
+  "id": "./",
+  "start_url": "./#entry",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6f5f2",
+  "theme_color": "#f6f5f2",
+  "categories": [
+    "finance",
+    "lifestyle"
+  ],
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Neue Buchung",
+      "url": "./#entry"
+    },
+    {
+      "name": "Übersicht",
+      "url": "./#overview"
+    }
+  ]
+}

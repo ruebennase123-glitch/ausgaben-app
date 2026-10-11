@@ -1,0 +1,97 @@
+// Central data model. Every syncable record carries `id`, `updatedAt` and a
+// soft-delete flag (`deleted`) so a later sync backend (e.g. Supabase) can
+// merge changes per record with "last write wins" and propagate deletions.
+
+export type ID = string
+export type ISODate = string // YYYY-MM-DD (local date)
+export type ISODateTime = string // full ISO timestamp
+export type MonthKey = string // YYYY-MM
+export type TxType = 'expense' | 'income'
+export type PersonId = 'p1' | 'p2'
+
+export interface SyncMeta {
+  id: ID
+  createdAt: ISODateTime
+  updatedAt: ISODateTime
+  deleted?: boolean
+}
+
+export interface Category {
+  id: string
+  name: string
+  emoji: string
+  type: TxType
+  color: string
+}
+
+export interface Person {
+  id: PersonId
+  name: string
+  emoji: string
+}
+
+export interface Transaction extends SyncMeta {
+  type: TxType
+  amountCents: number // always positive
+  categoryId: string
+  personId: PersonId
+  note?: string
+  date: ISODate
+  recurringId?: ID // set when auto-generated from a recurring rule
+}
+
+export interface RecurringRule extends SyncMeta {
+  type: TxType
+  amountCents: number
+  categoryId: string
+  personId: PersonId
+  note: string
+  dayOfMonth: number // 1..31 (clamped to month length)
+  startMonth: MonthKey
+  active: boolean
+}
+
+export interface GoalContribution {
+  id: ID
+  personId: PersonId
+  amountCents: number
+  date: ISODate
+}
+
+export interface SavingsGoal extends SyncMeta {
+  name: string
+  emoji: string
+  targetCents: number
+  contributions: GoalContribution[]
+  reachedAt?: ISODateTime
+}
+
+/** "Heute nichts ausgegeben" check-in, keeps the logging streak alive. */
+export interface CheckIn extends SyncMeta {
+  date: ISODate
+  personId: PersonId
+}
+
+export interface Settings {
+  persons: [Person, Person]
+  theme: 'system' | 'light' | 'dark'
+  lastPersonId: PersonId
+  updatedAt: ISODateTime
+}
+
+export interface BudgetEntry {
+  categoryId: string
+  limitCents: number
+  updatedAt: ISODateTime
+}
+
+export interface AppData {
+  schemaVersion: 1
+  transactions: Transaction[]
+  recurring: RecurringRule[]
+  goals: SavingsGoal[]
+  checkins: CheckIn[]
+  budgets: Record<string, BudgetEntry> // key = categoryId
+  badges: Record<string, ISODateTime> // badgeId -> earnedAt
+  settings: Settings
+}
