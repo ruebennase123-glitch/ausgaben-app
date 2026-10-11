@@ -30,13 +30,13 @@ export function buildSeed(now = new Date()) {
     [0, 'expense', 4.2, 'restaurant', 'p2', 'Cappuccino'],
     [-1, 'expense', 68.4, 'restaurant', 'p2', 'Pizza mit Freunden'],
     [-1, 'expense', 12.99, 'freizeit', 'p1', 'Kino'],
-    [-2, 'expense', 87.35, 'lebensmittel', 'p1', 'REWE Wocheneinkauf'],
+    [-2, 'expense', 87.35, 'lebensmittel', 'joint', 'REWE Wocheneinkauf'],
     [-3, 'expense', 39.9, 'kleidung', 'p2', 'Pullover'],
     [-3, 'expense', 6.5, 'lebensmittel', 'p2', 'Bäcker'],
     [-4, 'expense', 52.0, 'mobilitaet', 'p1', 'Tanken'],
     [-5, 'expense', 45.8, 'restaurant', 'p1', 'Sushi'],
     [-5, 'expense', 19.95, 'gesundheit', 'p2', 'Apotheke'],
-    [-6, 'expense', 112.6, 'lebensmittel', 'p2', 'Großeinkauf dm + Aldi'],
+    [-6, 'expense', 112.6, 'lebensmittel', 'joint', 'Großeinkauf dm + Aldi'],
     [-7, 'expense', 29.0, 'geschenke', 'p1', 'Geburtstag Mama'],
     [-8, 'expense', 34.5, 'freizeit', 'p2', 'Kletterhalle'],
     [-8, 'expense', 22.3, 'lebensmittel', 'p1', 'Edeka'],
@@ -80,9 +80,9 @@ export function buildSeed(now = new Date()) {
   const recurring = [
     rule('income', 2650, 'gehalt', 'p1', 'Gehalt Lukas', 1),
     rule('income', 2380, 'gehalt', 'p2', 'Gehalt Anna', 1),
-    rule('expense', 1150, 'wohnen', 'p1', 'Warmmiete', 1),
+    rule('expense', 1150, 'wohnen', 'joint', 'Warmmiete', 1),
     rule('expense', 116, 'mobilitaet', 'p1', '2× Deutschlandticket', 1),
-    rule('expense', 85, 'wohnen', 'p2', 'Strom', 3),
+    rule('expense', 85, 'wohnen', 'joint', 'Strom', 3),
     rule('expense', 28.98, 'abos', 'p2', 'Netflix + Spotify', 5),
     rule('expense', 24.99, 'abos', 'p1', 'Handyverträge', 15),
   ]
@@ -96,7 +96,7 @@ export function buildSeed(now = new Date()) {
   const goals = [
     {
       id: id('goal'), createdAt: t0, updatedAt: t0, name: 'Sommerurlaub Portugal', emoji: '✈️', targetCents: 240000,
-      contributions: [contrib('p1', 400, -60), contrib('p2', 400, -58), contrib('p1', 250, -30), contrib('p2', 300, -29), contrib('p1', 100, -5), contrib('p2', 110, -2)],
+      contributions: [contrib('p1', 400, -60), contrib('p2', 400, -58), contrib('p1', 250, -30), contrib('p2', 300, -29), contrib('p1', 100, -5), contrib('p2', 110, -2), contrib('joint', 150, -1)],
     },
     {
       id: id('goal'), createdAt: t0, updatedAt: t0, name: 'Neues Sofa', emoji: '🛋️', targetCents: 90000,

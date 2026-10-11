@@ -8,6 +8,7 @@ import { centsToInput, formatEUR, parseEURInput } from '../logic/money'
 import { formatShortDate, monthOf, today } from '../logic/dates'
 import { budgetStatus, spendByCategory, txOfMonth } from '../logic/stats'
 import { showToast } from './toast'
+import { payers } from '../data/people'
 import { IconCalendar, IconTrash } from './Icons'
 
 interface Props {
@@ -95,15 +96,15 @@ export function EntryForm({ initial, onDone, compact }: Props) {
         <span className="amount-cur">€</span>
       </div>
       <CategoryChips categories={cats} value={categoryId} onChange={setCategoryId} />
+      <PersonPicker persons={payers(data.settings)} value={personId} onChange={setPersonId} small />
       <div className="entry-meta">
-        <PersonPicker persons={data.settings.persons} value={personId} onChange={setPersonId} small />
+        <input className="note-input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Notiz (optional)" maxLength={80} enterKeyHint="done" />
         <label className="date-pill">
           <IconCalendar size={16} />
           <span>{formatShortDate(date)}</span>
           <input type="date" value={date} max="2099-12-31" onChange={(e) => setDate(e.target.value || today())} aria-label="Datum" />
         </label>
       </div>
-      <input className="note-input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Notiz (optional)" maxLength={80} enterKeyHint="done" />
       <Keypad onKey={(k) => setAmount((v) => applyKey(v, k))} />
       <div className="entry-actions">
         {initial && (

@@ -1,5 +1,7 @@
-import type { AppData } from '../types'
+import type { AppData, Person } from '../types'
 import { nowISO } from '../logic/id'
+
+export const DEFAULT_JOINT: Person = { id: 'joint', name: 'Gemeinsam', emoji: '🤝' }
 
 export function emptyData(): AppData {
   const now = nowISO()
@@ -17,6 +19,7 @@ export function emptyData(): AppData {
         { id: 'p2', name: 'Partnerin', emoji: '😊' },
       ],
       theme: 'system',
+      joint: { ...DEFAULT_JOINT },
       lastPersonId: 'p1',
       updatedAt: now,
     },
@@ -40,6 +43,11 @@ export function normalizeData(raw: unknown): AppData {
     checkins: Array.isArray(r.checkins) ? r.checkins : [],
     budgets: r.budgets && typeof r.budgets === 'object' ? r.budgets : {},
     badges: r.badges && typeof r.badges === 'object' ? r.badges : {},
-    settings: { ...base.settings, ...(r.settings ?? {}) },
+    settings: {
+      ...base.settings,
+      ...(r.settings ?? {}),
+      // Backward compatible: data from before the joint payer existed gets the default.
+      joint: { ...DEFAULT_JOINT, ...(r.settings?.joint ?? {}), id: 'joint' },
+    },
   }
 }

@@ -30,7 +30,8 @@ Beispieldaten (`scripts/seed-data.mjs`) werden nur für Screenshots in den Test-
 
 ## Funktionen
 
-- **Erfassen** (Startbildschirm): großer Ziffernblock, Ausgabe/Einnahme, Kategorie-Chips mit Emoji, Person, Datum (Standard heute), Notiz. Toast mit „Rückgängig“ und Budget-Warnung direkt nach dem Speichern.
+- **Wer zahlt?** Überall wählbar: Person 1, Person 2 oder **Gemeinsam** (Gemeinschaftskonto, Name/Emoji in den Einstellungen änderbar). Gemeinsam-Buchungen zählen für die gemeinsame Serie, nicht für die persönlichen.
+- **Erfassen** (Startbildschirm): großer Ziffernblock, Ausgabe/Einnahme, Kategorie-Chips mit Emoji, Person/Gemeinsam, Datum (Standard heute), Notiz. Toast mit „Rückgängig“ und Budget-Warnung direkt nach dem Speichern.
 - **Übersicht**: Monatssaldo, Einnahmen/Ausgaben, Donut-Diagramm nach Kategorie, Budget-Warnungen, Wochenrückblick, Buchungsliste nach Tagen (antippen = bearbeiten/löschen), Monatswechsler, Filter pro Person.
 - **Planen**: Monatsbudgets pro Kategorie mit Fortschrittsbalken (grün/gelb ab 80 %/rot über 100 %), Gesamtbudget mit „Heute“-Marker; Fixkosten & regelmäßige Einnahmen (monatlich, Tag wählbar, pausierbar), die automatisch gebucht werden (idempotent, auch nach Löschen kein Doppel-Eintrag).
 - **Erfolge**: gemeinsame & persönliche Tages-Serie (inkl. „Heute nichts ausgegeben“-Check-in), 14-Tage-Kalender, Wochenrückblick, gemeinsame Sparziele mit Einzahlungen pro Person, 11 Abzeichen mit Konfetti-Animation.

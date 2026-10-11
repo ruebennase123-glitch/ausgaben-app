@@ -7,7 +7,10 @@ export type ISODate = string // YYYY-MM-DD (local date)
 export type ISODateTime = string // full ISO timestamp
 export type MonthKey = string // YYYY-MM
 export type TxType = 'expense' | 'income'
-export type PersonId = 'p1' | 'p2'
+/** The two partners. */
+export type MemberId = 'p1' | 'p2'
+/** Who paid / owns a record: one of the partners or the joint account (Gemeinschaftskonto). */
+export type PersonId = MemberId | 'joint'
 
 export interface SyncMeta {
   id: ID
@@ -69,11 +72,13 @@ export interface SavingsGoal extends SyncMeta {
 /** "Heute nichts ausgegeben" check-in, keeps the logging streak alive. */
 export interface CheckIn extends SyncMeta {
   date: ISODate
-  personId: PersonId
+  personId: MemberId
 }
 
 export interface Settings {
   persons: [Person, Person]
+  /** Joint account as third payer (added in v1.1; filled with defaults for older data). */
+  joint: Person
   theme: 'system' | 'light' | 'dark'
   lastPersonId: PersonId
   updatedAt: ISODateTime

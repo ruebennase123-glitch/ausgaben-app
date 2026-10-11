@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react'
-import type { AppData, CheckIn, PersonId, RecurringRule, SavingsGoal, Settings, Transaction } from '../types'
+import type { AppData, CheckIn, MemberId, PersonId, RecurringRule, SavingsGoal, Settings, Transaction } from '../types'
 import { emptyData, normalizeData } from './defaults'
 import { LocalStorageRepository, type DataRepository } from './repository'
 import { generateRecurring } from '../logic/recurring'
@@ -112,7 +112,7 @@ class Store {
   }
 
   // ---------- Check-ins ----------
-  checkInNoSpend(personId: PersonId) {
+  checkInNoSpend(personId: MemberId) {
     const now = nowISO()
     const c: CheckIn = { id: newId(), createdAt: now, updatedAt: now, date: today(), personId }
     this.commit((d) => ({ ...d, checkins: [...d.checkins, c] }))

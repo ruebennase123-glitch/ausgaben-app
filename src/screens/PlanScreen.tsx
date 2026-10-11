@@ -9,6 +9,7 @@ import { CategoryChips, Empty, Keypad, MonthSwitcher, PersonPicker, Progress, Se
 import { applyKey } from '../logic/keypad'
 import { showToast } from '../components/toast'
 import { IconPlus, IconTrash } from '../components/Icons'
+import { payers } from '../data/people'
 
 export function PlanScreen() {
   const [tab, setTab] = useState<'budgets' | 'fix'>('budgets')
@@ -170,7 +171,7 @@ function Recurring() {
   const [edit, setEdit] = useState<RecurringRule | 'new' | null>(null)
   const rules = data.recurring.filter((r) => !r.deleted).sort((a, b) => a.dayOfMonth - b.dayOfMonth)
   const sum = (t: TxType) => rules.filter((r) => r.active && r.type === t).reduce((s, r) => s + r.amountCents, 0)
-  const persons = data.settings.persons
+  const persons = payers(data.settings)
   return (
     <>
       <section className="card fix-summary">
@@ -278,7 +279,7 @@ function RecurringEditor({ rule, onDone }: { rule?: RecurringRule; onDone: () =>
       </div>
       <div className="field">
         <span>Wer zahlt / bekommt es?</span>
-        <PersonPicker persons={data.settings.persons} value={personId} onChange={setPersonId} />
+        <PersonPicker persons={payers(data.settings)} value={personId} onChange={setPersonId} />
       </div>
       {rule && (
         <label className="switch-row">

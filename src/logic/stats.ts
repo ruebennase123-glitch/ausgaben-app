@@ -48,8 +48,13 @@ export function weeklyRecap(data: AppData) {
   const spent = totals(week).expense
   const prevSpent = totals(prev).expense
   const cats = [...spendByCategory(week).entries()].sort((a, b) => b[1] - a[1])
-  const perPerson: Record<PersonId, number> = { p1: 0, p2: 0 }
-  for (const x of week) perPerson[x.personId]++
+  const perPerson: Record<PersonId, number> = { p1: 0, p2: 0, joint: 0 }
+  const spentPerPerson: Record<PersonId, number> = { p1: 0, p2: 0, joint: 0 }
+  for (const x of week) {
+    if (perPerson[x.personId] === undefined) continue
+    perPerson[x.personId]++
+    if (x.type === 'expense') spentPerPerson[x.personId] += x.amountCents
+  }
   const loggedDays = new Set([
     ...live(data).filter((x) => !x.recurringId).map((x) => x.createdAt && localDay(x.createdAt)),
     ...data.checkins.filter((c) => !c.deleted).map((c) => c.date),
@@ -60,7 +65,7 @@ export function weeklyRecap(data: AppData) {
     .filter((c) => inRange(c.date, from, t))
     .reduce((s, c) => s + c.amountCents, 0)
   const change = prevSpent > 0 ? (spent - prevSpent) / prevSpent : null
-  return { from, to: t, spent, prevSpent, change, topCategory: cats[0], entries: week.length, perPerson, loggedDays: loggedDays.size, saved }
+  return { from, to: t, spent, prevSpent, change, topCategory: cats[0], entries: week.length, perPerson, spentPerPerson, loggedDays: loggedDays.size, saved }
 }
 
 function localDay(iso: string): ISODate {

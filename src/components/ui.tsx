@@ -39,10 +39,11 @@ export function CategoryChips({ categories, value, onChange }: { categories: Cat
 
 export function PersonPicker({ persons, value, onChange, small }: { persons: Person[]; value: PersonId; onChange: (p: PersonId) => void; small?: boolean }) {
   return (
-    <div className={`segmented ${small ? 'small' : ''}`} role="radiogroup" aria-label="Person">
+    <div className={`segmented stacked ${small ? 'small' : ''}`} role="radiogroup" aria-label="Person">
       {persons.map((p) => (
         <button key={p.id} type="button" role="radio" aria-checked={value === p.id} className={value === p.id ? 'active' : ''} onClick={() => onChange(p.id)}>
-          <span>{p.emoji}</span> {p.name}
+          <span className="seg-emoji">{p.emoji}</span>
+          <span className="seg-label">{p.name}</span>
         </button>
       ))}
     </div>

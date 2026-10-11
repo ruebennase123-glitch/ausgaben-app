@@ -6,6 +6,7 @@ import { showToast } from '../components/toast'
 import { live } from '../logic/stats'
 import { today } from '../logic/dates'
 
+const JOINT_EMOJIS = ['🤝', '🏠', '🏦', '💑', '👫', '💶', '🐷', '❤️', '🔑', '🧺']
 const EMOJIS = ['🙂', '😊', '😎', '🦊', '🐻', '🐱', '🌸', '⭐', '🍀', '🚀']
 
 export function SettingsScreen() {
@@ -61,13 +62,13 @@ export function SettingsScreen() {
         <h1>Einstellungen</h1>
       </header>
 
-      <h3 className="section-title">Wir zwei</h3>
+      <h3 className="section-title">Wir zwei &amp; unser Konto</h3>
       <section className="card form">
         {persons.map((p, i) => (
           <div key={p.id} className="person-edit">
             <label className="field">
               <span>Person {i + 1}</span>
-              <input value={p.name} maxLength={20} onChange={(e) => setPerson(i as 0 | 1, { name: e.target.value })} onBlur={(e) => !e.target.value.trim() && setPerson(i as 0 | 1, { name: i === 0 ? 'Ich' : 'Partnerin' })} />
+              <input aria-label={`Name Person ${i + 1}`} value={p.name} maxLength={20} onChange={(e) => setPerson(i as 0 | 1, { name: e.target.value })} onBlur={(e) => !e.target.value.trim() && setPerson(i as 0 | 1, { name: i === 0 ? 'Ich' : 'Partnerin' })} />
             </label>
             <div className="emoji-pick small">
               {EMOJIS.map((e) => (
@@ -76,6 +77,24 @@ export function SettingsScreen() {
             </div>
           </div>
         ))}
+        <div className="person-edit">
+          <label className="field">
+            <span>Gemeinschaftskonto</span>
+            <input
+              aria-label="Name Gemeinschaftskonto"
+              value={data.settings.joint.name}
+              maxLength={20}
+              onChange={(e) => store.updateSettings({ joint: { ...data.settings.joint, name: e.target.value } })}
+              onBlur={(e) => !e.target.value.trim() && store.updateSettings({ joint: { ...data.settings.joint, name: 'Gemeinsam' } })}
+            />
+          </label>
+          <div className="emoji-pick small">
+            {JOINT_EMOJIS.map((e) => (
+              <button key={e} type="button" className={data.settings.joint.emoji === e ? 'active' : ''} onClick={() => store.updateSettings({ joint: { ...data.settings.joint, emoji: e } })}>{e}</button>
+            ))}
+          </div>
+          <p className="muted small-text">Für Ausgaben vom gemeinsamen Konto, z. B. Miete. Zählt für eure gemeinsame Serie.</p>
+        </div>
       </section>
 
       <h3 className="section-title">Darstellung</h3>

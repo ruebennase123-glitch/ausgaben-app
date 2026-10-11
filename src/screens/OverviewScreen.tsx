@@ -9,6 +9,7 @@ import { Donut, Empty, MonthSwitcher, Segmented, Sheet } from '../components/ui'
 import { EntryForm } from '../components/EntryForm'
 import { IconRepeat } from '../components/Icons'
 import { RecapCard } from '../components/RecapCard'
+import { payers } from '../data/people'
 
 export function OverviewScreen() {
   const { data } = useStore()
@@ -18,7 +19,7 @@ export function OverviewScreen() {
   const txs = useMemo(() => txOfMonth(data, month, person === 'all' ? undefined : person), [data, month, person])
   const t = totals(txs)
   const byCat = [...spendByCategory(txs).entries()].sort((a, b) => b[1] - a[1])
-  const persons = data.settings.persons
+  const persons = payers(data.settings)
 
   const warnings = Object.values(data.budgets)
     .filter((b) => b.limitCents > 0)
@@ -38,10 +39,13 @@ export function OverviewScreen() {
       </header>
       <MonthSwitcher month={month} onChange={setMonth} max={currentMonth()} />
       <Segmented
-        className="small person-filter"
+        className="small stacked person-filter"
         value={person}
         onChange={setPerson}
-        options={[{ value: 'all', label: 'Beide' }, ...persons.map((p) => ({ value: p.id, label: `${p.emoji} ${p.name}` }))]}
+        options={[
+          { value: 'all', label: <><span className="seg-emoji">👥</span><span className="seg-label">Beide</span></> },
+          ...persons.map((p) => ({ value: p.id, label: <><span className="seg-emoji">{p.emoji}</span><span className="seg-label">{p.name}</span></> })),
+        ]}
       />
 
       <section className={`card balance-card ${t.balance < 0 ? 'neg' : ''}`}>

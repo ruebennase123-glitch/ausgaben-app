@@ -105,6 +105,11 @@ async function tab(page, label) {
   await shot(page, '11-dunkel-erfassen.png')
   await tab(page, 'Erfolge')
   await shot(page, '12-dunkel-erfolge.png')
+  await tab(page, 'Planen')
+  await page.getByRole('radio', { name: /Fixkosten/ }).click()
+  await page.locator('.tx-row', { hasText: 'Warmmiete' }).click()
+  await page.waitForSelector('.sheet')
+  await shot(page, 'gemeinsam-fixkosten.png')
   await ctx.close()
 }
 

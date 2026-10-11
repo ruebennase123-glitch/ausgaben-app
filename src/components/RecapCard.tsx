@@ -1,6 +1,7 @@
 import { useStore } from '../data/store'
 import { getCategory } from '../data/categories'
 import { weeklyRecap } from '../logic/stats'
+import { payers } from '../data/people'
 import { formatEUR } from '../logic/money'
 import { parseISODate } from '../logic/dates'
 
@@ -9,7 +10,7 @@ const short = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'short' 
 export function RecapCard({ compact }: { compact?: boolean }) {
   const { data } = useStore()
   const r = weeklyRecap(data)
-  const [p1, p2] = data.settings.persons
+  const people = payers(data.settings)
   const top = r.topCategory ? getCategory(r.topCategory[0]) : null
   let trend = 'Erste Woche – weiter so!'
   let tone = 'neutral'
@@ -43,8 +44,17 @@ export function RecapCard({ compact }: { compact?: boolean }) {
       {!compact && (
         <ul className="recap-facts">
           {top && <li>Größter Posten: <b>{top.emoji} {top.name}</b> ({formatEUR(r.topCategory![1])})</li>}
-          <li>Einträge: <b>{p1.emoji} {p1.name} {r.perPerson.p1}</b> · <b>{p2.emoji} {p2.name} {r.perPerson.p2}</b></li>
-          {r.saved > 0 && <li>Gemeinsam gespart: <b>{formatEUR(r.saved)}</b> 🐷</li>}
+          {people
+            .filter((p) => p.id !== 'joint' || r.perPerson.joint > 0)
+            .map((p) => (
+              <li key={p.id} className="recap-person">
+                <span>{p.emoji} {p.name}</span>
+                <span>
+                  <b>{formatEUR(r.spentPerPerson[p.id])}</b> · {r.perPerson[p.id]} {r.perPerson[p.id] === 1 ? 'Eintrag' : 'Einträge'}
+                </span>
+              </li>
+            ))}
+          {r.saved > 0 && <li>Aufs Sparziel gelegt: <b>{formatEUR(r.saved)}</b> 🐷</li>}
         </ul>
       )}
     </section>

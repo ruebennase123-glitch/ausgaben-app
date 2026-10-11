@@ -1,7 +1,11 @@
 import type { AppData, ISODate, PersonId } from '../types'
 import { addDays, localDateOfTimestamp, today } from './dates'
 
-/** Days on which someone actively logged (manual entries + "nichts ausgegeben" check-ins). */
+/**
+ * Days on which someone actively logged (manual entries + "nichts ausgegeben" check-ins).
+ * Without `person` (shared streak) every entry counts, including 'joint' (Gemeinschaftskonto);
+ * per-person streaks only count that partner's own entries.
+ */
 export function loggedDays(data: AppData, person?: PersonId): Set<ISODate> {
   const s = new Set<ISODate>()
   for (const t of data.transactions) {
@@ -58,9 +62,10 @@ export function streaks(data: AppData) {
 export function lastDays(data: AppData, n: number) {
   const a = loggedDays(data, 'p1')
   const b = loggedDays(data, 'p2')
+  const j = loggedDays(data, 'joint')
   const t = today()
   return Array.from({ length: n }, (_, i) => {
     const date = addDays(t, i - n + 1)
-    return { date, p1: a.has(date), p2: b.has(date) }
+    return { date, p1: a.has(date), p2: b.has(date), joint: j.has(date) }
   })
 }

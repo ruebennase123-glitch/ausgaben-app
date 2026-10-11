@@ -9,6 +9,7 @@ import { Empty, PersonPicker, Progress, Sheet } from '../components/ui'
 import { RecapCard } from '../components/RecapCard'
 import { showToast } from '../components/toast'
 import { IconPlus, IconTrash } from '../components/Icons'
+import { payers } from '../data/people'
 
 const wd = new Intl.DateTimeFormat('de-DE', { weekday: 'narrow' })
 const earnedFmt = new Intl.DateTimeFormat('de-DE', { day: 'numeric', month: 'short', year: 'numeric' })
@@ -17,6 +18,7 @@ export function AchievementsScreen() {
   const { data } = useStore()
   const s = streaks(data)
   const days = lastDays(data, 14)
+  const hasJoint = days.some((d) => d.joint)
   const [p1, p2] = data.settings.persons
   const [goalEdit, setGoalEdit] = useState<SavingsGoal | 'new' | null>(null)
   const [deposit, setDeposit] = useState<SavingsGoal | null>(null)
@@ -53,9 +55,15 @@ export function AchievementsScreen() {
             <div key={d.date} className="cal-day">
               <span className={`cal-dot ${d.p1 ? 'on p1' : ''}`} />
               <span className={`cal-dot ${d.p2 ? 'on p2' : ''}`} />
+              {hasJoint && <span className={`cal-dot ${d.joint ? 'on joint' : ''}`} />}
               <small>{wd.format(parseISODate(d.date))}</small>
             </div>
           ))}
+        </div>
+        <div className="cal-legend">
+          <span><i className="cal-dot on p1" /> {p1.name}</span>
+          <span><i className="cal-dot on p2" /> {p2.name}</span>
+          {hasJoint && <span><i className="cal-dot on joint" /> {data.settings.joint.name}</span>}
         </div>
         {notLoggedToday.length > 0 && (
           <div className="checkin-row">
@@ -67,7 +75,7 @@ export function AchievementsScreen() {
                   type="button"
                   className="pill"
                   onClick={() => {
-                    store.checkInNoSpend(id as PersonId)
+                    store.checkInNoSpend(id)
                     showToast(`🧘 ${p.name}: Tag ohne Ausgaben eingecheckt – Serie läuft weiter!`)
                   }}
                 >
@@ -109,7 +117,10 @@ export function AchievementsScreen() {
             <Progress ratio={ratio} level="goal" />
             <div className="goal-bottom">
               <small className="muted">
-                {p1.emoji} {formatEUR(by('p1'))} · {p2.emoji} {formatEUR(by('p2'))}
+                {payers(data.settings)
+                  .filter((p) => p.id !== 'joint' || by('joint') > 0)
+                  .map((p) => `${p.emoji}\u00a0${formatEUR(by(p.id))}`)
+                  .join(' · ')}
               </small>
               {g.reachedAt ? (
                 <span className="goal-done">🎯 Erreicht!</span>
@@ -224,7 +235,7 @@ function DepositForm({ goal, onDone }: { goal: SavingsGoal; onDone: () => void }
       </label>
       <div className="field">
         <span>Wer zahlt ein?</span>
-        <PersonPicker persons={data.settings.persons} value={person} onChange={setPerson} />
+        <PersonPicker persons={payers(data.settings)} value={person} onChange={setPerson} />
       </div>
       <button
         type="button"
