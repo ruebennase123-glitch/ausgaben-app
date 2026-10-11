@@ -21,6 +21,13 @@ Beispieldaten (`scripts/seed-data.mjs`) werden nur für Screenshots in den Test-
 > Service Worker & „Zum Home-Bildschirm“ funktionieren nur über **HTTPS** (oder localhost).
 > Zum Testen auf dem iPhone daher ein HTTPS-Hosting (s. u.) oder einen HTTPS-Tunnel nutzen.
 
+## Live / Deployment
+
+- Live: https://ruebennase123-glitch.github.io/ausgaben-app/
+- Jeder Push auf `main` baut und deployt automatisch per GitHub Actions (`.github/workflows/deploy.yml`, `BASE_PATH=/ausgaben-app/`).
+- Lokal unter dem Unterpfad testen: `BASE_PATH=/ausgaben-app/ npm run build && BASE_PATH=/ausgaben-app/ npm run preview`
+- Live prüfen: `npm run verify:live` (Seite, Manifest, Icons, Service Worker, Offline-Start)
+
 ## Funktionen
 
 - **Erfassen** (Startbildschirm): großer Ziffernblock, Ausgabe/Einnahme, Kategorie-Chips mit Emoji, Person, Datum (Standard heute), Notiz. Toast mit „Rückgängig“ und Budget-Warnung direkt nach dem Speichern.
