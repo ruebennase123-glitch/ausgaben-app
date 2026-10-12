@@ -8,6 +8,7 @@ import { newId, nowISO } from '../logic/id'
 import { today } from '../logic/dates'
 
 type Listener = () => void
+export type CommitSource = 'local' | 'remote'
 
 export interface UiState {
   ready: boolean
@@ -24,6 +25,7 @@ class Store {
   private data: AppData = emptyData()
   private ui: UiState = { ready: false, celebrations: [] }
   private listeners = new Set<Listener>()
+  private commitListeners = new Set<(source: CommitSource) => void>()
   private snapshot = { data: this.data, ui: this.ui }
 
   private repo: DataRepository
@@ -36,6 +38,12 @@ class Store {
     return () => this.listeners.delete(l)
   }
   getSnapshot = () => this.snapshot
+  getData = () => this.data
+  /** Called after every persisted change (used by the sync engine to schedule a push). */
+  onCommit(l: (source: CommitSource) => void) {
+    this.commitListeners.add(l)
+    return () => this.commitListeners.delete(l)
+  }
 
   private emit() {
     this.snapshot = { data: this.data, ui: this.ui }
@@ -61,7 +69,16 @@ class Store {
     this.commit((d) => d)
   }
 
-  private commit(mutate: (d: AppData) => AppData, opts: { celebrate?: boolean } = { celebrate: true }) {
+  /** Apply changes that came from the server (no celebrations, no push trigger). */
+  applyRemote(mutate: (d: AppData) => AppData) {
+    this.commit(mutate, { celebrate: false, source: 'remote' })
+  }
+  /** Replace all data (used when switching to household data). */
+  replaceData(data: AppData) {
+    this.commit(() => normalizeData(data), { celebrate: false, source: 'remote' })
+  }
+
+  private commit(mutate: (d: AppData) => AppData, opts: { celebrate?: boolean; source?: CommitSource } = { celebrate: true }) {
     let next = generateRecurring(mutate(this.data)).data
     const earned = newlyEarned(next)
     if (earned.length) {
@@ -76,6 +93,8 @@ class Store {
       this.emit()
     })
     this.emit()
+    const source = opts.source ?? 'local'
+    this.commitListeners.forEach((l) => l(source))
   }
 
   dismissCelebration() {
@@ -178,7 +197,9 @@ class Store {
 
   // ---------- Settings ----------
   updateSettings(patch: Partial<Settings>) {
-    this.commit((d) => ({ ...d, settings: { ...d.settings, ...patch, updatedAt: nowISO() } }))
+    const now = nowISO()
+    const shared = 'persons' in patch || 'joint' in patch
+    this.commit((d) => ({ ...d, settings: { ...d.settings, ...patch, updatedAt: now, ...(shared ? { sharedUpdatedAt: now } : {}) } }))
   }
 
   // ---------- Backup ----------

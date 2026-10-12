@@ -8,6 +8,11 @@ import { SettingsScreen } from './screens/SettingsScreen'
 import { Celebration } from './components/Celebration'
 import { IconChart, IconGear, IconPlus, IconTarget, IconTrophy } from './components/Icons'
 import { hideToast, onToast, type ToastMsg } from './components/toast'
+import { useSync } from './sync/engine'
+import { AuthFlow, HandoffScreen } from './sync/AuthFlow'
+import { localRecordCount } from './sync/mapping'
+
+const ONBOARDED_KEY = 'ausgaben-app:onboarded'
 
 type Tab = 'entry' | 'overview' | 'plan' | 'goals' | 'settings'
 const TABS: { id: Tab; label: string; icon: ReactNode }[] = [
@@ -27,6 +32,24 @@ export default function App() {
   const { data, ui } = useStore()
   const [tab, setTab] = useState<Tab>(initialTab)
   const [toast, setToast] = useState<ToastMsg | null>(null)
+  const s = useSync()
+  const [auth, setAuth] = useState<null | 'onboarding' | 'normal'>(null)
+
+  // First start (no data, not signed in): show the welcome / login screen once
+  useEffect(() => {
+    if (!ui.ready || s.phase !== 'signed-out' || s.pending) return
+    if (localStorage.getItem(ONBOARDED_KEY) || localRecordCount(data) > 0) return
+    setAuth('onboarding')
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ui.ready, s.phase])
+  // Login in progress or household decision pending: keep the flow open
+  useEffect(() => {
+    if (s.pending || s.phase === 'needs-link') setAuth((a) => a ?? 'normal')
+  }, [s.pending, s.phase])
+  const closeAuth = () => {
+    localStorage.setItem(ONBOARDED_KEY, '1')
+    setAuth(null)
+  }
 
   useEffect(() => onToast(setToast), [])
   useEffect(() => {
@@ -55,6 +78,7 @@ export default function App() {
     return () => document.removeEventListener('visibilitychange', onVis)
   }, [])
 
+  if (s.phase === 'handoff') return <HandoffScreen />
   if (!ui.ready) return <div className="splash">💶</div>
 
   return (
@@ -65,7 +89,7 @@ export default function App() {
         {tab === 'overview' && <OverviewScreen />}
         {tab === 'plan' && <PlanScreen />}
         {tab === 'goals' && <AchievementsScreen />}
-        {tab === 'settings' && <SettingsScreen />}
+        {tab === 'settings' && <SettingsScreen onOpenAuth={() => setAuth('normal')} />}
       </main>
 
       {toast && (
@@ -93,6 +117,7 @@ export default function App() {
           </button>
         ))}
       </nav>
+      {auth && <AuthFlow onboarding={auth === 'onboarding'} onClose={closeAuth} />}
       <Celebration />
     </div>
   )

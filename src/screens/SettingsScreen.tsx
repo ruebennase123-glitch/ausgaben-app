@@ -1,3 +1,4 @@
+import { SyncBadge } from '../sync/SyncBadge'
 import { useRef, useState } from 'react'
 import type { Person } from '../types'
 import { store, useStore } from '../data/store'
@@ -5,11 +6,13 @@ import { Segmented } from '../components/ui'
 import { showToast } from '../components/toast'
 import { live } from '../logic/stats'
 import { today } from '../logic/dates'
+import { SyncSettings } from '../sync/SyncSettings'
+import { sync } from '../sync/engine'
 
 const JOINT_EMOJIS = ['🤝', '🏠', '🏦', '💑', '👫', '💶', '🐷', '❤️', '🔑', '🧺']
 const EMOJIS = ['🙂', '😊', '😎', '🦊', '🐻', '🐱', '🌸', '⭐', '🍀', '🚀']
 
-export function SettingsScreen() {
+export function SettingsScreen({ onOpenAuth }: { onOpenAuth: () => void }) {
   const { data } = useStore()
   const fileRef = useRef<HTMLInputElement>(null)
   const persons = data.settings.persons
@@ -60,7 +63,10 @@ export function SettingsScreen() {
     <div className="screen">
       <header className="topbar">
         <h1>Einstellungen</h1>
+        <SyncBadge />
       </header>
+
+      <SyncSettings onOpenAuth={onOpenAuth} />
 
       <h3 className="section-title">Wir zwei &amp; unser Konto</h3>
       <section className="card form">
@@ -113,7 +119,7 @@ export function SettingsScreen() {
       <h3 className="section-title">Datensicherung</h3>
       <section className="card form">
         <p className="muted small-text">
-          Eure Daten liegen nur auf diesem Gerät ({live(data).length} Buchungen). Macht ab und zu ein Backup – z. B. in iCloud Drive über „In Dateien sichern“.
+          Eure Daten liegen auf diesem Gerät ({live(data).length} Buchungen). Macht ab und zu ein Backup – z. B. in iCloud Drive über „In Dateien sichern“.
         </p>
         <button type="button" className="btn secondary full" onClick={doExport}>💾 Backup exportieren (JSON)</button>
         <button type="button" className="btn secondary full" onClick={() => fileRef.current?.click()}>📥 Backup importieren</button>
@@ -130,6 +136,7 @@ export function SettingsScreen() {
           onClick={() => {
             if (window.confirm('Wirklich ALLE Daten auf diesem Gerät löschen? Das kann nicht rückgängig gemacht werden.')) {
               store.resetAll()
+              sync.resetCursors()
               showToast('Alle Daten gelöscht')
             }
           }}

@@ -14,6 +14,19 @@ const data = () => page.evaluate(() => JSON.parse(localStorage.getItem('ausgaben
 
 await page.goto(BASE + '/')
 await page.waitForSelector('.keypad')
+// 0) Onboarding / Anmeldung (Sync) – first start shows the welcome screen
+await page.waitForSelector('.auth-overlay')
+assert.ok(await page.getByRole('button', { name: 'Anmelden mit E-Mail' }).isVisible())
+await page.getByRole('button', { name: 'Anmelden mit E-Mail' }).click()
+await page.getByPlaceholder('name@beispiel.de').fill('keine-adresse')
+assert.ok(await page.getByRole('button', { name: 'Anmeldelink senden' }).isDisabled())
+await page.getByRole('button', { name: 'Später' }).click()
+await page.waitForSelector('.auth-overlay', { state: 'detached' })
+await page.reload()
+await page.waitForSelector('.keypad')
+await page.waitForTimeout(400)
+assert.equal(await page.locator('.auth-overlay').count(), 0, 'Onboarding erscheint nur einmal')
+console.log('✓ Onboarding/Anmeldemaske (E-Mail) + „Später“ funktioniert, App nutzbar ohne Konto')
 assert.equal(await page.locator('.btn.primary.big').innerText(), 'Betrag eingeben')
 // Layout at 390x844: save button must sit fully above the tab bar incl. the raised + button
 const saveBottom = await page.locator('.btn.primary.big').evaluate((e) => e.getBoundingClientRect().bottom)
@@ -279,6 +292,12 @@ await ctx.setOffline(true)
 await page.reload()
 await page.waitForSelector('.tabbar')
 console.log('✓ Startet offline')
+// Sync section in "Mehr" offers sign-in
+await page.goto(BASE + '/#settings').catch(() => {})
+await page.locator('.tabbar').getByText('Mehr', { exact: true }).click()
+assert.ok(await page.getByText('Gemeinsam synchronisieren').isVisible())
+assert.ok(await page.locator('.sync-card').getByRole('button', { name: 'Anmelden mit E-Mail' }).isVisible())
+console.log('✓ Mehr → „Gemeinsam synchronisieren“ vorhanden (offline)')
 
 assert.deepEqual(errors, [])
 console.log('\nAlle Smoke-Tests bestanden.')

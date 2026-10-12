@@ -1,3 +1,4 @@
+import { SyncBadge } from '../sync/SyncBadge'
 import { useMemo, useState } from 'react'
 import type { PersonId, Transaction } from '../types'
 import { useStore } from '../data/store'
@@ -36,6 +37,7 @@ export function OverviewScreen() {
     <div className="screen">
       <header className="topbar">
         <h1>Übersicht</h1>
+        <SyncBadge />
       </header>
       <MonthSwitcher month={month} onChange={setMonth} max={currentMonth()} />
       <Segmented

@@ -1,0 +1,6 @@
+{
+  "site_url": "https://ruebennase123-glitch.github.io/ausgaben-app/",
+  "uri_allow_list": "https://ruebennase123-glitch.github.io/ausgaben-app/**,http://localhost:5173/**,http://localhost:4173/**",
+  "mailer_otp_length": 6,
+  "mailer_otp_exp": 3600
+}

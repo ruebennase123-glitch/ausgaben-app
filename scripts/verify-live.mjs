@@ -16,6 +16,9 @@ const res = await page.goto(BASE + '/', { waitUntil: 'networkidle' })
 assert.equal(res.status(), 200)
 await page.waitForSelector('.keypad')
 console.log('✓ Seite lädt:', await page.title())
+await page.waitForSelector('.auth-overlay')
+await page.getByRole('button', { name: /ohne Konto/ }).click()
+console.log('✓ Willkommens-/Anmeldebildschirm erscheint, „ohne Konto“ schließt ihn')
 
 const manifestHref = await page.locator('link[rel=manifest]').getAttribute('href')
 const manifestUrl = new URL(manifestHref, page.url()).href

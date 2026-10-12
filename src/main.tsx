@@ -3,8 +3,10 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App'
 import { store } from './data/store'
+import { sync } from './sync/engine'
 
 store.init()
+sync.init()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

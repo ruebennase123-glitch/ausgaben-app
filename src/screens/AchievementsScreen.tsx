@@ -1,3 +1,4 @@
+import { SyncBadge } from '../sync/SyncBadge'
 import { useState } from 'react'
 import type { PersonId, SavingsGoal } from '../types'
 import { goalSaved, store, useStore } from '../data/store'
@@ -31,6 +32,7 @@ export function AchievementsScreen() {
     <div className="screen">
       <header className="topbar">
         <h1>Erfolge</h1>
+        <SyncBadge />
       </header>
 
       <section className="card streak-card">

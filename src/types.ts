@@ -82,6 +82,8 @@ export interface Settings {
   theme: 'system' | 'light' | 'dark'
   lastPersonId: PersonId
   updatedAt: ISODateTime
+  /** Last change of the household-shared part (persons, joint) – LWW key for sync. */
+  sharedUpdatedAt?: ISODateTime
 }
 
 export interface BudgetEntry {

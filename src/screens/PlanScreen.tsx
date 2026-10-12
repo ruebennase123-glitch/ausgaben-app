@@ -1,3 +1,4 @@
+import { SyncBadge } from '../sync/SyncBadge'
 import { useState } from 'react'
 import type { RecurringRule, TxType, PersonId } from '../types'
 import { store, useStore } from '../data/store'
@@ -17,6 +18,7 @@ export function PlanScreen() {
     <div className="screen">
       <header className="topbar">
         <h1>Planen</h1>
+        <SyncBadge />
       </header>
       <Segmented
         className="plan-tabs"
