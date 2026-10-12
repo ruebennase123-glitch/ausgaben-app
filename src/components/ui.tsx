@@ -118,7 +118,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
   )
 }
 
-export function Donut({ data, size = 168, thickness = 22, center }: { data: { value: number; color: string; key: string }[]; size?: number; thickness?: number; center?: ReactNode }) {
+export function Donut({ data, size = 168, thickness = 22, center, onSelect }: { data: { value: number; color: string; key: string; label?: string }[]; size?: number; thickness?: number; center?: ReactNode; onSelect?: (key: string) => void }) {
   const total = data.reduce((s, d) => s + d.value, 0)
   const r = (size - thickness) / 2
   const c = 2 * Math.PI * r
@@ -126,7 +126,7 @@ export function Donut({ data, size = 168, thickness = 22, center }: { data: { va
   let offset = 0
   return (
     <div className="donut" style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden={!onSelect}>
         <circle cx={size / 2} cy={size / 2} r={r} fill="none" stroke="var(--track)" strokeWidth={thickness} />
         {total > 0 &&
           data.map((d) => {
@@ -144,7 +144,12 @@ export function Donut({ data, size = 168, thickness = 22, center }: { data: { va
                 strokeDashoffset={-offset}
                 strokeLinecap="butt"
                 transform={`rotate(-90 ${size / 2} ${size / 2})`}
-              />
+                data-key={d.key}
+                className={onSelect ? 'donut-slice' : undefined}
+                onClick={onSelect ? () => onSelect(d.key) : undefined}
+              >
+                {d.label && <title>{d.label}</title>}
+              </circle>
             )
             offset += len
             return el

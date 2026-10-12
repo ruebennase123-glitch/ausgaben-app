@@ -25,6 +25,8 @@ export interface Category {
   emoji: string
   type: TxType
   color: string
+  /** Retired: not offered in pickers; old records are migrated to `mergedInto`. */
+  mergedInto?: string
 }
 
 export interface Person {

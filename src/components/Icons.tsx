@@ -13,3 +13,4 @@ export const IconNote = ({ size }: P) => (<svg {...base(size)}><path d="M12 20h9
 export const IconRepeat = ({ size }: P) => (<svg {...base(size)}><path d="M17 2l4 4-4 4" /><path d="M3 11V9a3 3 0 0 1 3-3h15M7 22l-4-4 4-4" /><path d="M21 13v2a3 3 0 0 1-3 3H3" /></svg>)
 export const IconTrash = ({ size }: P) => (<svg {...base(size)}><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14" /></svg>)
 export const IconCheck = ({ size }: P) => (<svg {...base(size)}><path d="M20 6L9 17l-5-5" /></svg>)
+export const IconSearch = ({ size }: P) => (<svg {...base(size)}><circle cx="11" cy="11" r="7" /><path d="M20 20l-3.5-3.5" /></svg>)

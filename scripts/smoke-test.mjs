@@ -192,7 +192,7 @@ console.log('✓ Bezeichnung Gemeinsam editierbar')
   const iso = (x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`
   const tx = (o, person) => ({ id: 'legacy-' + o + person, createdAt: day(o).toISOString(), updatedAt: day(o).toISOString(), type: 'expense', amountCents: 1000, categoryId: 'lebensmittel', personId: person, date: iso(day(o)) })
   const legacy = {
-    schemaVersion: 1, transactions: [tx(-2, 'p1')], recurring: [], goals: [], checkins: [], budgets: {}, badges: { first_entry: day(-2).toISOString() },
+    schemaVersion: 1, transactions: [tx(-2, 'p1'), { ...tx(-2, 'p1'), id: 'legacy-trip', categoryId: 'urlaub-gemeinsam', amountCents: 18900 }], recurring: [], goals: [], checkins: [], budgets: { 'urlaub-gemeinsam': { categoryId: 'urlaub-gemeinsam', limitCents: 50000, updatedAt: day(-2).toISOString() } }, badges: { first_entry: day(-2).toISOString() },
     settings: { persons: [{ id: 'p1', name: 'Max', emoji: '😎' }, { id: 'p2', name: 'Lea', emoji: '🌸' }], theme: 'light', lastPersonId: 'p2', updatedAt: day(-2).toISOString() },
   }
   await p2.addInitScript((j) => { if (!sessionStorage.getItem('s')) { localStorage.setItem('ausgaben-app:v1', j); sessionStorage.setItem('s', '1') } }, JSON.stringify(legacy))
@@ -202,7 +202,14 @@ console.log('✓ Bezeichnung Gemeinsam editierbar')
   assert.deepEqual(m.settings.joint, { id: 'joint', name: 'Gemeinsam', emoji: '🤝' })
   assert.equal(m.transactions[0].personId, 'p1')
   assert.equal(m.settings.persons[0].name, 'Max')
-  console.log('✓ Migration alter Daten (joint ergänzt, Buchungen unverändert)')
+  const trip = m.transactions.find((t) => t.id === 'legacy-trip')
+  assert.equal(trip.categoryId, 'urlaub')
+  assert.equal(trip.amountCents, 18900)
+  assert.ok(!trip.deleted)
+  assert.equal(m.budgets.urlaub.limitCents, 50000)
+  assert.equal(m.budgets['urlaub-gemeinsam'].limitCents, 0)
+  m.transactions = m.transactions.filter((t) => t.id !== 'legacy-trip')
+  console.log('✓ Migration alter Daten (joint ergänzt, „Gemeinsamer Urlaub“ → „Urlaub“ inkl. Budget, nichts gelöscht)')
   // joint entries yesterday + today -> shared streak 3 (incl. p1 on day -2); per-person streaks stay 0
   m.transactions.push(tx(-1, 'joint'), tx(0, 'joint'))
   await p2.evaluate((j) => localStorage.setItem('ausgaben-app:v1', j), JSON.stringify(m))
@@ -219,11 +226,13 @@ console.log('✓ Bezeichnung Gemeinsam editierbar')
 await page.locator('.tabbar').getByText('Erfassen', { exact: true }).click()
 await page.getByRole('radio', { name: 'Ausgabe' }).click()
 const chipNames = await page.locator('.chips .chip').evaluateAll((els) => els.map((e) => e.dataset.name))
-assert.equal(chipNames.length, 17)
+assert.equal(chipNames.length, 18)
 assert.equal(chipNames[0], 'Einkäufe')
-assert.deepEqual(chipNames.slice(-8), ['Renovieren', 'Urlaub', 'Gemeinsamer Urlaub', 'Picnic', 'Lieferando', 'Dating', 'Sparen/Rücklagen', 'Sonstiges'])
+assert.ok(chipNames.includes('Shopping') && !chipNames.includes('Kleidung'))
+assert.ok(!chipNames.includes('Gemeinsamer Urlaub'), 'Gemeinsamer Urlaub nicht mehr wählbar')
+assert.deepEqual(chipNames.slice(-9), ['Renovieren', 'Urlaub', 'Picnic', 'Lieferando', 'Dating', 'Beauty', 'Versicherungen', 'Sparen/Rücklagen', 'Sonstiges'])
 const chip = (scope, name) => scope.locator(`.chip[data-name="${name}"]`)
-for (const [cat, keys] of [['Renovieren', ['4', '5']], ['Urlaub', ['2', '0', '0']], ['Gemeinsamer Urlaub', ['4', '0', '0']], ['Picnic', ['6', '8']], ['Lieferando', ['3', '2']], ['Dating', ['5', '5']], ['Sparen/Rücklagen', ['9']]]) {
+for (const [cat, keys] of [['Renovieren', ['4', '5']], ['Urlaub', ['2', '0', '0']], ['Beauty', ['4', '0', '0']], ['Versicherungen', ['3', '3']], ['Picnic', ['6', '8']], ['Lieferando', ['3', '2']], ['Dating', ['5', '5']], ['Sparen/Rücklagen', ['9']]]) {
   for (const k of keys) await page.getByRole('button', { name: k, exact: true }).click()
   await chip(page, cat).click()
   await page.locator('.btn.primary.big').click()
@@ -232,7 +241,8 @@ for (const [cat, keys] of [['Renovieren', ['4', '5']], ['Urlaub', ['2', '0', '0'
 d = await data()
 assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'renovieren').length, 1)
 assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'urlaub').length, 1)
-assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'urlaub-gemeinsam').length, 1)
+assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'beauty').length, 1)
+assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'versicherungen').length, 1)
 assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'picnic').length, 1)
 assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'dating').length, 1)
 assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'lieferando').length, 1)
@@ -241,7 +251,7 @@ assert.equal(d.transactions.find((t) => t.amountCents === 1250)?.categoryId ?? '
 await page.locator('.tabbar').getByText('Übersicht', { exact: true }).click()
 const legend = (await page.locator('.legend').innerText())
 // chart legend shows the top 6 categories; these new ones are in the top 6 of this test data
-for (const c of ['Gemeinsamer Urlaub', 'Urlaub', 'Picnic', 'Renovieren']) assert.ok(legend.includes(c), legend)
+for (const c of ['Beauty', 'Urlaub', 'Picnic', 'Renovieren']) assert.ok(legend.includes(c), legend)
 const colors = await page.locator('.donut circle[stroke^="#"]').evaluateAll((els) => els.map((e) => e.getAttribute('stroke')))
 assert.equal(new Set(colors).size, colors.length, 'distinct chart colors')
 await page.locator('.tabbar').getByText('Planen', { exact: true }).click()
@@ -297,6 +307,82 @@ console.log('✓ Kategorien: Einkäufe (umbenannt, gleiche id), Sparen/Rücklage
   assert.match(await page.locator('.tx-row', { hasText: 'Rundfunkbeitrag' }).innerText(), /vierteljährlich/)
   assert.match(await page.locator('.fix-summary').innerText(), /Fixkosten \/ Monat/)
   console.log('✓ Fixkosten-Intervalle: jährlich/Quartal nur in fälligen Monaten, nächste Fälligkeit + Monatsanteil angezeigt')
+}
+
+// 8f) Saldo-Karte (Kontrast), Kategorie-Details, Suche & Filter
+{
+  await page.locator('.tabbar').getByText('Übersicht', { exact: true }).click()
+  const card = page.locator('.balance-card')
+  const bal = await page.locator('.balance-value').innerText()
+  const styles = await card.evaluate((el) => {
+    const c = (e) => getComputedStyle(e).color
+    return { value: c(el.querySelector('.balance-value')), label: c(el.querySelector('.balance-label')), sub: [...el.querySelectorAll('.balance-row > div')].map(c), bg: getComputedStyle(el).backgroundImage }
+  })
+  for (const col of [styles.value, styles.label, ...styles.sub]) assert.equal(col, 'rgb(255, 255, 255)', 'Saldo-Texte weiß')
+  assert.match(styles.bg, bal.startsWith('-') || bal.startsWith('−') ? /185, 28, 28/ : /67, 56, 202/)
+  console.log(`✓ Saldo-Karte: weiße Schrift auf dunklem ${bal.startsWith('-') || bal.startsWith('−') ? 'Rot' : 'Indigo'} (Kontrast ≥ 6,4:1)`)
+
+  // detail via legend
+  const first = page.locator('.legend .legend-btn').first()
+  const firstName = (await first.locator('.legend-name').innerText()).replace(/^\S+\s/, '')
+  await first.click()
+  await page.locator('.detail-page').waitFor()
+  assert.equal((await page.locator('.detail-head h1').innerText()).trim(), firstName)
+  assert.match(await page.locator('.detail-stats').innerText(), /Anteil Ausgaben[\s\S]*%[\s\S]*Vormonat/)
+  assert.equal(await page.locator('.bars .bar-col').count(), 6)
+  const nRows = await page.locator('.detail-page .tx-row').count()
+  assert.ok(nRows >= 1)
+  // tap entry → edit sheet opens above detail
+  await page.locator('.detail-page .tx-row').first().click()
+  await page.locator('.sheet').waitFor()
+  await page.locator('.sheet').getByText('Schließen').click()
+  // browser/iPhone back closes the detail page
+  await page.goBack()
+  await page.locator('.detail-page').waitFor({ state: 'detached' })
+  assert.ok(await page.locator('.balance-card').isVisible())
+  // detail via donut slice + back button
+  // tap on the ring just right of 12 o'clock = start of the largest slice
+  await page.locator('.donut svg').click({ position: { x: 70, y: 9 } })
+  await page.locator('.detail-page').waitFor()
+  await page.getByRole('button', { name: 'Zurück zur Übersicht' }).click()
+  await page.locator('.detail-page').waitFor({ state: 'detached' })
+  // "+N weitere" expands the legend
+  const more = page.locator('.legend-more')
+  if (await more.count()) {
+    const before = await page.locator('.legend .legend-btn:not(.legend-more)').count()
+    await more.click()
+    assert.ok((await page.locator('.legend .legend-btn:not(.legend-more)').count()) > before)
+    assert.match(await more.innerText(), /Weniger anzeigen/)
+  }
+  console.log(`✓ Kategorie-Details (${firstName}): Summe, Anteil, Vormonat, 6-Monats-Trend, ${nRows} Buchung(en), Bearbeiten, Zurück per Geste/Button, Legende aufklappbar`)
+
+  // search & filter
+  const allTx = (await data()).transactions.filter((t) => !t.deleted)
+  const search = page.getByLabel('Buchungen durchsuchen')
+  await search.fill('Baukredit')
+  await page.locator('.search-summary').waitFor()
+  assert.match(await page.locator('.search-summary').innerText(), /^1 Treffer/)
+  await search.fill('urlaub')
+  const nUrlaub = await page.locator('.tx-list .tx-row').count()
+  assert.ok(nUrlaub >= 1, 'Kategorie-Name wird durchsucht')
+  await search.fill('400')
+  assert.ok((await page.locator('.tx-list .tx-row').count()) >= 1, 'Betragssuche')
+  await search.fill('')
+  await page.getByRole('button', { name: /^Filter/ }).click()
+  await page.locator('.fchip[data-cat="picnic"]').click()
+  await page.locator('.fchip[data-cat="dating"]').click()
+  assert.equal(await page.locator('.tx-list .tx-row').count(), 2)
+  assert.match(await page.locator('.search-summary').innerText(), /2 Treffer · Ausgaben −1(23|23),00\s€/)
+  await page.getByLabel('In allen Monaten suchen').check({ force: true })
+  assert.match(await page.locator('.search-summary').innerText(), /alle Monate/)
+  // person filter combines
+  await page.locator('.person-filter').getByRole('radio', { name: /Gemeinsam/ }).click()
+  const jointHits = await page.locator('.tx-list .tx-row').count()
+  assert.equal(jointHits, allTx.filter((t) => ['picnic', 'dating'].includes(t.categoryId) && t.personId === 'joint').length)
+  await page.locator('.person-filter').getByRole('radio', { name: /Beide/ }).click()
+  await page.getByText('Filter zurücksetzen').click()
+  assert.equal(await page.locator('.search-summary').count(), 0)
+  console.log('✓ Suche (Notiz, Kategorie, Betrag) + Kategorie-Mehrfachfilter + alle Monate + Personenfilter, Trefferzahl & Summe')
 }
 
 // 9) Rename person, export, reset, import

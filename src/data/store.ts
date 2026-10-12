@@ -3,6 +3,7 @@ import type { AppData, CheckIn, MemberId, PersonId, RecurringRule, SavingsGoal, 
 import { emptyData, normalizeData } from './defaults'
 import { LocalStorageRepository, type DataRepository } from './repository'
 import { generateRecurring } from '../logic/recurring'
+import { migrateCategories } from '../logic/migrateCategories'
 import { newlyEarned } from '../logic/badges'
 import { newId, nowISO } from '../logic/id'
 import { today } from '../logic/dates'
@@ -79,7 +80,7 @@ class Store {
   }
 
   private commit(mutate: (d: AppData) => AppData, opts: { celebrate?: boolean; source?: CommitSource } = { celebrate: true }) {
-    let next = generateRecurring(mutate(this.data)).data
+    let next = generateRecurring(migrateCategories(mutate(this.data))).data
     const earned = newlyEarned(next)
     if (earned.length) {
       const now = nowISO()

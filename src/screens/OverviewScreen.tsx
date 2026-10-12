@@ -1,14 +1,15 @@
 import { SyncBadge } from '../sync/SyncBadge'
-import { useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { PersonId, Transaction } from '../types'
 import { useStore } from '../data/store'
-import { getCategory } from '../data/categories'
+import { CATEGORIES, getCategory } from '../data/categories'
 import { currentMonth, formatDayHeading } from '../logic/dates'
 import { formatEUR, formatEURShort } from '../logic/money'
-import { budgetStatus, spendByCategory, totals, txOfMonth } from '../logic/stats'
+import { budgetStatus, live, spendByCategory, totals, txOfMonth } from '../logic/stats'
 import { Donut, Empty, MonthSwitcher, Segmented, Sheet } from '../components/ui'
 import { EntryForm } from '../components/EntryForm'
-import { IconRepeat } from '../components/Icons'
+import { IconRepeat, IconSearch } from '../components/Icons'
+import { CategoryDetail } from '../components/CategoryDetail'
 import { RecapCard } from '../components/RecapCard'
 import { payers } from '../data/people'
 
@@ -21,6 +22,55 @@ export function OverviewScreen() {
   const t = totals(txs)
   const byCat = [...spendByCategory(txs).entries()].sort((a, b) => b[1] - a[1])
   const persons = payers(data.settings)
+  const [legendAll, setLegendAll] = useState(false)
+
+  // ----- category detail page, integrated with browser history (iPhone swipe-back / back button)
+  const [detail, setDetail] = useState<string | null>(null)
+  const openDetail = useCallback((id: string) => {
+    history.pushState({ ...(history.state ?? {}), catDetail: id }, '')
+    setDetail(id)
+  }, [])
+  const closeDetail = useCallback(() => {
+    if (history.state?.catDetail) history.back()
+    else setDetail(null)
+  }, [])
+  useEffect(() => {
+    const onPop = () => setDetail(history.state?.catDetail ?? null)
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+  useEffect(() => {
+    if (!detail) return
+    window.scrollTo(0, 0)
+    document.body.classList.add('detail-open')
+    return () => document.body.classList.remove('detail-open')
+  }, [detail])
+
+  // ----- search & filter
+  const [query, setQuery] = useState('')
+  const [cats, setCats] = useState<string[]>([])
+  const [allMonths, setAllMonths] = useState(false)
+  const [filterOpen, setFilterOpen] = useState(false)
+  const searching = query.trim().length > 0 || cats.length > 0 || allMonths
+  const listTxs = useMemo(() => {
+    const base = allMonths
+      ? live(data)
+          .filter((t) => person === 'all' || t.personId === person)
+          .sort((a, b) => (a.date === b.date ? b.createdAt.localeCompare(a.createdAt) : b.date.localeCompare(a.date)))
+      : txs
+    const q = query.trim().toLowerCase()
+    const qAmount = q.replace(/\s|€/g, '').replace(/\./g, ',')
+    return base.filter((t) => {
+      if (cats.length && !cats.includes(t.categoryId)) return false
+      if (!q) return true
+      const c = getCategory(t.categoryId)
+      if ((t.note ?? '').toLowerCase().includes(q) || c.name.toLowerCase().includes(q)) return true
+      if (!/\d/.test(qAmount)) return false
+      const plain = (t.amountCents / 100).toFixed(2).replace('.', ',')
+      return plain.includes(qAmount) || formatEUR(t.amountCents).replace(/\s|€/g, '').includes(qAmount)
+    })
+  }, [allMonths, data, person, txs, query, cats])
+  const listTotals = totals(listTxs)
 
   const warnings = Object.values(data.budgets)
     .filter((b) => b.limitCents > 0)
@@ -29,9 +79,9 @@ export function OverviewScreen() {
 
   const groups = useMemo(() => {
     const m = new Map<string, Transaction[]>()
-    for (const tx of txs) m.set(tx.date, [...(m.get(tx.date) ?? []), tx])
+    for (const tx of listTxs) m.set(tx.date, [...(m.get(tx.date) ?? []), tx])
     return [...m.entries()]
-  }, [txs])
+  }, [listTxs])
 
   return (
     <div className="screen">
@@ -86,9 +136,10 @@ export function OverviewScreen() {
         ) : (
           <div className="chart-row">
             <Donut
+              onSelect={openDetail}
               size={128}
               thickness={18}
-              data={byCat.map(([id, v]) => ({ key: id, value: v, color: getCategory(id).color }))}
+              data={byCat.map(([id, v]) => ({ key: id, value: v, color: getCategory(id).color, label: getCategory(id).name }))}
               center={
                 <>
                   <small>Ausgaben</small>
@@ -97,21 +148,25 @@ export function OverviewScreen() {
               }
             />
             <ul className="legend">
-              {byCat.slice(0, 6).map(([id, v]) => {
+              {(legendAll ? byCat : byCat.slice(0, 6)).map(([id, v]) => {
                 const c = getCategory(id)
                 return (
                   <li key={id}>
-                    <span className="dot" style={{ background: c.color }} />
-                    <span className="legend-name">{c.emoji} {c.name}</span>
-                    <span className="legend-val">{formatEURShort(v)}</span>
+                    <button type="button" className="legend-btn" onClick={() => openDetail(id)} aria-label={`${c.name}: ${formatEUR(v)} – Details`}>
+                      <span className="dot" style={{ background: c.color }} />
+                      <span className="legend-name">{c.emoji} {c.name}</span>
+                      <span className="legend-val">{formatEURShort(v)}</span>
+                    </button>
                   </li>
                 )
               })}
               {byCat.length > 6 && (
-                <li className="muted">
-                  <span className="dot" style={{ background: 'var(--track)' }} />
-                  <span className="legend-name">+{byCat.length - 6} weitere</span>
-                  <span className="legend-val">{formatEURShort(byCat.slice(6).reduce((s, [, v]) => s + v, 0))}</span>
+                <li>
+                  <button type="button" className="legend-btn legend-more" onClick={() => setLegendAll((v) => !v)} aria-expanded={legendAll}>
+                    <span className="dot" style={{ background: 'var(--track)' }} />
+                    <span className="legend-name">{legendAll ? 'Weniger anzeigen' : `+${byCat.length - 6} weitere`}</span>
+                    {!legendAll && <span className="legend-val">{formatEURShort(byCat.slice(6).reduce((s, [, v]) => s + v, 0))}</span>}
+                  </button>
                 </li>
               )}
             </ul>
@@ -123,7 +178,53 @@ export function OverviewScreen() {
 
       <section className="tx-list">
         <h3 className="section-title">Buchungen</h3>
-        {groups.length === 0 && <Empty emoji="🧾" title="Keine Buchungen in diesem Monat" />}
+        <div className="search-row">
+          <label className="search-field">
+            <IconSearch size={17} />
+            <input type="search" enterKeyHint="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Suchen: Notiz, Kategorie, Betrag" aria-label="Buchungen durchsuchen" />
+          </label>
+          <button type="button" className={`filter-btn ${filterOpen || cats.length ? 'active' : ''}`} onClick={() => setFilterOpen((v) => !v)} aria-expanded={filterOpen}>
+            Filter{cats.length ? ` (${cats.length})` : ''}
+          </button>
+        </div>
+        {filterOpen && (
+          <div className="filter-panel">
+            <div className="filter-chips" role="group" aria-label="Kategorien filtern">
+              {CATEGORIES.map((c) => {
+                const on = cats.includes(c.id)
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    className={`fchip ${on ? 'on' : ''}`}
+                    aria-pressed={on}
+                    data-cat={c.id}
+                    style={{ ['--c' as string]: c.color }}
+                    onClick={() => setCats((cs) => (on ? cs.filter((x) => x !== c.id) : [...cs, c.id]))}
+                  >
+                    {c.emoji} {c.type === 'income' && c.id !== 'gehalt' ? 'Sonstige Einnahmen' : c.name}
+                  </button>
+                )
+              })}
+            </div>
+            <label className="switch-row filter-switch">
+              <span>In allen Monaten suchen</span>
+              <input type="checkbox" className="switch" checked={allMonths} onChange={(e) => setAllMonths(e.target.checked)} aria-label="In allen Monaten suchen" />
+            </label>
+            {(cats.length > 0 || allMonths) && (
+              <button type="button" className="text-btn" onClick={() => { setCats([]); setAllMonths(false) }}>Filter zurücksetzen</button>
+            )}
+          </div>
+        )}
+        {searching && (
+          <div className="search-summary" role="status">
+            <b>{listTxs.length} {listTxs.length === 1 ? 'Treffer' : 'Treffer'}</b>
+            {allMonths ? ' · alle Monate' : ''}
+            {listTotals.expense > 0 && <> · Ausgaben <b className="neg">−{formatEUR(listTotals.expense)}</b></>}
+            {listTotals.income > 0 && <> · Einnahmen <b className="pos">+{formatEUR(listTotals.income)}</b></>}
+          </div>
+        )}
+        {groups.length === 0 && <Empty emoji={searching ? '🔍' : '🧾'} title={searching ? 'Nichts gefunden' : 'Keine Buchungen in diesem Monat'} />}
         {groups.map(([date, list]) => (
           <div key={date} className="tx-group">
             <div className="tx-day">
@@ -155,6 +256,7 @@ export function OverviewScreen() {
         ))}
       </section>
 
+      {detail && <CategoryDetail categoryId={detail} month={month} person={person} onBack={closeDetail} onEdit={setEditing} />}
       <Sheet open={!!editing} onClose={() => setEditing(null)} title="Buchung bearbeiten">
         {editing && <EntryForm key={editing.id} initial={editing} onDone={() => setEditing(null)} compact />}
       </Sheet>
