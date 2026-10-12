@@ -52,3 +52,43 @@ self.addEventListener('fetch', (event) => {
     ),
   )
 })
+
+// ---------- Web Push (iOS 16.4+ Home-Bildschirm-App, Android, Desktop) ----------
+self.addEventListener('push', (event) => {
+  let msg = {}
+  try {
+    msg = event.data ? event.data.json() : {}
+  } catch {
+    msg = { body: event.data ? event.data.text() : '' }
+  }
+  const title = msg.title || 'Haushaltsbuch'
+  const url = new URL(msg.url || './', self.registration.scope).href
+  event.waitUntil(
+    Promise.all([
+      self.registration.showNotification(title, {
+        body: msg.body || '',
+        tag: msg.tag || undefined,
+        icon: new URL('icon-192.png', self.registration.scope).href,
+        badge: new URL('icon-192.png', self.registration.scope).href,
+        data: { url },
+      }),
+      // let open app windows know (used by the automated tests and to refresh data)
+      self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cs) => cs.forEach((c) => c.postMessage({ type: 'push', msg }))),
+    ]),
+  )
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = (event.notification.data && event.notification.data.url) || self.registration.scope
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((cs) => {
+      const c = cs.find((x) => x.url.startsWith(self.registration.scope))
+      if (c) {
+        c.postMessage({ type: 'navigate', url })
+        return c.focus()
+      }
+      return self.clients.openWindow(url)
+    }),
+  )
+})

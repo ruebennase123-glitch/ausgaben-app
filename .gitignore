@@ -25,3 +25,4 @@ dist-ssr
 
 # Generated screenshots (reproducible via npm run screenshots)
 screenshots/
+supabase/.temp/

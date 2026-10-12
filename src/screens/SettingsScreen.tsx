@@ -7,6 +7,7 @@ import { showToast } from '../components/toast'
 import { live } from '../logic/stats'
 import { today } from '../logic/dates'
 import { SyncSettings } from '../sync/SyncSettings'
+import { PushSettings } from '../sync/PushSettings'
 import { sync } from '../sync/engine'
 
 const JOINT_EMOJIS = ['🤝', '🏠', '🏦', '💑', '👫', '💶', '🐷', '❤️', '🔑', '🧺']
@@ -67,6 +68,7 @@ export function SettingsScreen({ onOpenAuth }: { onOpenAuth: () => void }) {
       </header>
 
       <SyncSettings onOpenAuth={onOpenAuth} />
+      <PushSettings />
 
       <h3 className="section-title">Wir zwei &amp; unser Konto</h3>
       <section className="card form">

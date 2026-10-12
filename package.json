@@ -12,7 +12,8 @@
     "screenshots": "node scripts/screenshots.mjs",
     "test:smoke": "node scripts/smoke-test.mjs",
     "verify:live": "node scripts/verify-live.mjs",
-    "test:sync": "node scripts/sync-e2e.mjs"
+    "test:sync": "node scripts/sync-e2e.mjs",
+    "test:push": "node scripts/push-e2e.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.3",

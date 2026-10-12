@@ -31,6 +31,23 @@ function initialTab(): Tab {
 export default function App() {
   const { data, ui } = useStore()
   const [tab, setTab] = useState<Tab>(initialTab)
+  // Notification tap (service worker) or manual hash change → switch tab
+  useEffect(() => {
+    const go = (hash: string) => {
+      const h = hash.replace(/^#/, '') as Tab
+      if (TABS.some((t) => t.id === h)) setTab(h)
+    }
+    const onMsg = (e: MessageEvent) => {
+      if (e.data?.type === 'navigate' && typeof e.data.url === 'string') go(new URL(e.data.url).hash)
+    }
+    const onHash = () => go(location.hash)
+    navigator.serviceWorker?.addEventListener('message', onMsg)
+    window.addEventListener('hashchange', onHash)
+    return () => {
+      navigator.serviceWorker?.removeEventListener('message', onMsg)
+      window.removeEventListener('hashchange', onHash)
+    }
+  }, [])
   const [toast, setToast] = useState<ToastMsg | null>(null)
   const s = useSync()
   const [auth, setAuth] = useState<null | 'onboarding' | 'normal'>(null)
