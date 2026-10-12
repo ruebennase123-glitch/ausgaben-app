@@ -434,3 +434,8 @@ h1, h2, h3 { margin: 0; }
 .ellipsis { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 .sync-text.idle { color: var(--income); }
 .sync-text.error { color: var(--over); }
+.auth-choice { display: flex; flex-direction: column; gap: 10px; background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px; }
+.auth-choice h2 { margin: 0; font-size: 17px; font-weight: 700; line-height: 1.3; }
+.auth-choice p { margin: 0; }
+.auth-info { background: var(--accent-soft); color: var(--text); border-radius: 12px; padding: 10px 14px; font-size: 14px; line-height: 1.4; }
+.switch-household { display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--track); padding-top: 10px; }

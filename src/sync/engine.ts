@@ -41,6 +41,8 @@ export interface SyncState {
   error?: string
   pending?: { email: string; since: number }
   handoff?: 'done' | 'error'
+  /** The linked household disappeared (e.g. removed) – show the create/join choice again. */
+  householdGone?: boolean
 }
 interface Meta {
   userId: string
@@ -71,6 +73,8 @@ export function germanAuthError(e: unknown): string {
   if (/invalid_code/.test(msg)) return 'Diesen Einladungscode gibt es nicht. Bitte prüfen.'
   if (/household_full/.test(msg)) return 'Dieser Haushalt hat schon zwei Mitglieder.'
   if (/already_member/.test(msg)) return 'Du bist bereits Mitglied eines Haushalts.'
+  if (/household_shared/.test(msg)) return 'Euer jetziger Haushalt hat schon zwei Mitglieder – ein Wechsel ist dann nicht möglich.'
+  if (/switch_household|PGRST202|Could not find the function/.test(msg)) return 'Der Wechsel ist auf dem Server noch nicht freigeschaltet. Bitte später erneut versuchen.'
   if (/expired|invalid/i.test(msg) && /otp|token/i.test(msg)) return 'Der Code ist falsch oder abgelaufen.'
   if (/email/i.test(msg) && /invalid/i.test(msg)) return 'Bitte eine gültige E-Mail-Adresse eingeben.'
   if (isNetworkError(e)) return 'Keine Internetverbindung.'
@@ -273,6 +277,19 @@ class SyncEngine {
     if (error) throw error
     await this.loadHousehold()
   }
+  /**
+   * Join another household while already in one. Only allowed when this account is the only member of
+   * its current household (that empty/1-person household is removed server-side). Local entries stay on
+   * the phone and are offered for upload in the following link step (default: move them over).
+   */
+  async switchHousehold(code: string) {
+    const { error } = await this.sb.rpc('switch_household', { p_code: code })
+    if (error) throw error
+    this.unsubscribeRealtime()
+    this.saveMeta(null)
+    this.set({ household: undefined })
+    await this.loadHousehold()
+  }
   async joinHousehold(code: string) {
     const { error } = await this.sb.rpc('join_household', { p_code: code })
     if (error) throw error
@@ -389,8 +406,9 @@ class SyncEngine {
     if (!h || h.household_id !== hid) {
       // removed from household
       this.saveMeta(null)
-      this.set({ phase: 'no-household', household: undefined })
-      throw new Error('Haushalt nicht mehr verfügbar')
+      this.unsubscribeRealtime()
+      this.set({ phase: 'no-household', household: undefined, householdGone: true, net: 'idle', error: undefined })
+      return false
     }
     this.set({
       household: { id: hid, inviteCode: h.invite_code as string, slot: h.slot as MemberId, memberCount: h.member_count as number, settings: { settings: h.settings as never, settings_updated_at: h.settings_updated_at as string } },

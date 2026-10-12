@@ -157,19 +157,32 @@ function HouseholdStep() {
   return (
     <div className="auth-step">
       <h1>Euer gemeinsamer Haushalt</h1>
-      <p className="auth-lead">Angemeldet als <b>{s.email}</b>. Eine Person erstellt den Haushalt, die andere tritt mit dem Code bei.</p>
-      <button type="button" className="btn primary big full" disabled={!!busy} onClick={() => run('create')}>
-        🏠 {busy === 'create' ? 'Wird erstellt …' : 'Haushalt erstellen'}
-      </button>
-      <div className="auth-divider"><span>oder</span></div>
-      <label className="field">
-        <span>Einladungscode von deinem Partner / deiner Partnerin</span>
+      <p className="auth-lead">Angemeldet als <b>{s.email}</b>. Ihr teilt <b>einen</b> Haushalt: Eine Person erstellt ihn, die andere tritt mit dem Code bei.</p>
+      {s.householdGone && <div className="auth-info">Dein bisheriger Haushalt ist nicht mehr verbunden. Tritt jetzt dem Haushalt deines Partners / deiner Partnerin bei.</div>}
+      <section className="auth-choice">
+        <h2>🤝 Dein Partner / deine Partnerin nutzt die App schon?</h2>
+        <p className="muted small-text">Lass dir den Einladungscode geben (in der App unter „Mehr → Gemeinsam synchronisieren“).</p>
         <input className="code-input" value={code} autoCapitalize="characters" autoCorrect="off" maxLength={9} onChange={(e) => setCode(e.target.value.toUpperCase())} placeholder="z. B. K7M2QX" aria-label="Einladungscode" />
-      </label>
+        <button type="button" className="btn primary big full" disabled={code.replace(/[^A-Z0-9]/g, '').length < 6 || !!busy} onClick={() => run('join')}>
+          {busy === 'join' ? 'Trete bei …' : 'Mit Code beitreten'}
+        </button>
+      </section>
       {err && <div className="auth-error">{err}</div>}
-      <button type="button" className="btn secondary big full" disabled={code.replace(/[^A-Z0-9]/g, '').length < 6 || !!busy} onClick={() => run('join')}>
-        🤝 {busy === 'join' ? 'Trete bei …' : 'Mit Code beitreten'}
-      </button>
+      <div className="auth-divider"><span>oder</span></div>
+      <section className="auth-choice">
+        <h2>🏠 Ihr fangt gerade neu an?</h2>
+        <p className="muted small-text">Nur <b>eine</b> Person erstellt den Haushalt und teilt danach den Code.</p>
+        <button
+          type="button"
+          className="btn secondary big full"
+          disabled={!!busy}
+          onClick={() => {
+            if (window.confirm('Neuen Haushalt erstellen?\n\nWenn dein Partner / deine Partnerin schon einen Haushalt hat, tippe auf „Abbrechen“ und tritt stattdessen mit dem Code bei.')) run('create')
+          }}
+        >
+          {busy === 'create' ? 'Wird erstellt …' : 'Haushalt erstellen'}
+        </button>
+      </section>
     </div>
   )
 }

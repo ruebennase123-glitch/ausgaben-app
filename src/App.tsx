@@ -44,8 +44,8 @@ export default function App() {
   }, [ui.ready, s.phase])
   // Login in progress or household decision pending: keep the flow open
   useEffect(() => {
-    if (s.pending || s.phase === 'needs-link') setAuth((a) => a ?? 'normal')
-  }, [s.pending, s.phase])
+    if (s.pending || s.phase === 'needs-link' || (s.phase === 'no-household' && s.householdGone)) setAuth((a) => a ?? 'normal')
+  }, [s.pending, s.phase, s.householdGone])
   const closeAuth = () => {
     localStorage.setItem(ONBOARDED_KEY, '1')
     setAuth(null)
