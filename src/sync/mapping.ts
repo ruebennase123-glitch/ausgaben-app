@@ -31,7 +31,7 @@ export const txRow = (t: Transaction, hid: string): Row => ({
 })
 export const ruleRow = (r: RecurringRule, hid: string): Row => ({
   id: r.id, household_id: hid, type: r.type, amount_cents: r.amountCents, category_id: r.categoryId, person_id: r.personId, note: r.note,
-  day_of_month: r.dayOfMonth, start_month: r.startMonth, active: r.active, created_at: r.createdAt, updated_at: r.updatedAt, deleted: !!r.deleted,
+  day_of_month: r.dayOfMonth, interval_months: r.intervalMonths ?? 1, start_month: r.startMonth, active: r.active, created_at: r.createdAt, updated_at: r.updatedAt, deleted: !!r.deleted,
 })
 export const goalRow = (g: SavingsGoal, hid: string): Row => ({
   id: g.id, household_id: hid, name: g.name, emoji: g.emoji, target_cents: g.targetCents, reached_at: g.reachedAt ?? null,
@@ -61,6 +61,7 @@ const txFrom = (r: Row): Transaction => ({
 const ruleFrom = (r: Row): RecurringRule => ({
   id: r.id as string, type: r.type as RecurringRule['type'], amountCents: r.amount_cents as number, categoryId: r.category_id as string,
   personId: r.person_id as PersonId, note: (r.note as string) ?? '', dayOfMonth: r.day_of_month as number, startMonth: r.start_month as string,
+  intervalMonths: ([1, 3, 6, 12].includes(r.interval_months as number) ? r.interval_months : 1) as RecurringRule['intervalMonths'],
   active: r.active as boolean, createdAt: iso(r.created_at as string), updatedAt: iso(r.updated_at as string), ...(r.deleted ? { deleted: true } : {}),
 })
 const checkinFrom = (r: Row): CheckIn => ({

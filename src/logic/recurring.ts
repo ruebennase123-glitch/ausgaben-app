@@ -1,9 +1,11 @@
 import type { AppData, Transaction } from '../types'
 import { addMonths, currentMonth, daysInMonth, today } from './dates'
+import { intervalOf } from './interval'
 import { RECURRING_NS, uuidv5 } from './uuid5'
 
 /**
- * Creates the monthly entries for all active recurring rules up to today.
+ * Creates the entries for all active recurring rules up to today – only in due months
+ * (start month + k × interval: 1 monatlich, 3 Quartal, 6 halbjährlich, 12 jährlich).
  * Idempotent: a month is generated only once per rule (also if the user later
  * deleted the generated entry – deleted entries are kept as tombstones).
  *
@@ -20,7 +22,8 @@ export function generateRecurring(data: AppData): { data: AppData; created: numb
   )
   for (const rule of data.recurring) {
     if (!rule.active || rule.deleted) continue
-    for (let m = rule.startMonth, guard = 0; m <= cm && guard < 120; m = addMonths(m, 1), guard++) {
+    const step = intervalOf(rule)
+    for (let m = rule.startMonth, guard = 0; m <= cm && guard < 120; m = addMonths(m, step), guard++) {
       const day = Math.min(rule.dayOfMonth, daysInMonth(m))
       const date = `${m}-${String(day).padStart(2, '0')}`
       if (date > t) break

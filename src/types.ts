@@ -43,6 +43,8 @@ export interface Transaction extends SyncMeta {
   recurringId?: ID // set when auto-generated from a recurring rule
 }
 
+export type IntervalMonths = 1 | 3 | 6 | 12
+
 export interface RecurringRule extends SyncMeta {
   type: TxType
   amountCents: number
@@ -50,6 +52,8 @@ export interface RecurringRule extends SyncMeta {
   personId: PersonId
   note: string
   dayOfMonth: number // 1..31 (clamped to month length)
+  /** Months between bookings: 1 monatlich, 3 vierteljährlich, 6 halbjährlich, 12 jährlich. Missing = 1 (older data). */
+  intervalMonths?: IntervalMonths
   startMonth: MonthKey
   active: boolean
 }

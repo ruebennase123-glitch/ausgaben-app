@@ -1,6 +1,8 @@
+import { useSync } from '../sync/engine'
 import { SyncBadge } from '../sync/SyncBadge'
 import { useState } from 'react'
-import type { RecurringRule, TxType, PersonId } from '../types'
+import type { RecurringRule, TxType, PersonId, IntervalMonths } from '../types'
+import { INTERVALS, MONTH_NAMES, alignStart, intervalInfo, intervalOf, monthlyEquivalent, nextDue } from '../logic/interval'
 import { store, useStore } from '../data/store'
 import { categoriesFor, getCategory } from '../data/categories'
 import { currentMonth, daysInMonth, today } from '../logic/dates'
@@ -171,33 +173,40 @@ function BudgetEditor({ categoryId, onDone }: { categoryId: string; onDone: () =
 function Recurring() {
   const { data } = useStore()
   const [edit, setEdit] = useState<RecurringRule | 'new' | null>(null)
-  const rules = data.recurring.filter((r) => !r.deleted).sort((a, b) => a.dayOfMonth - b.dayOfMonth)
-  const sum = (t: TxType) => rules.filter((r) => r.active && r.type === t).reduce((s, r) => s + r.amountCents, 0)
+  const rules = data.recurring
+    .filter((r) => !r.deleted)
+    .map((r) => ({ r, next: nextDue(r) }))
+    .sort((a, b) => Number(b.r.active) - Number(a.r.active) || a.next.localeCompare(b.next))
+  // Monthly equivalent: quarterly ÷ 3, half-yearly ÷ 6, yearly ÷ 12
+  const sum = (t: TxType) => rules.filter(({ r }) => r.active && r.type === t).reduce((s, { r }) => s + monthlyEquivalent(r), 0)
+  const hasNonMonthly = rules.some(({ r }) => r.active && intervalOf(r) !== 1)
   const persons = payers(data.settings)
   return (
     <>
       <section className="card fix-summary">
         <div>
-          <small>Fixe Einnahmen</small>
+          <small>Fixe Einnahmen / Monat</small>
           <b className="pos">+{formatEUR(sum('income'))}</b>
         </div>
         <div>
-          <small>Fixkosten</small>
+          <small>Fixkosten / Monat</small>
           <b className="neg">−{formatEUR(sum('expense'))}</b>
         </div>
         <div>
-          <small>Frei verfügbar</small>
+          <small>Frei verfügbar / Monat</small>
           <b>{formatEUR(sum('income') - sum('expense'))}</b>
         </div>
       </section>
-      <p className="hint">Wird jeden Monat am gewählten Tag automatisch als Buchung angelegt.</p>
+      <p className="hint">
+        Beträge <b>pro Monat</b>{hasNonMonthly ? ' (umgerechnet: vierteljährlich ÷ 3, halbjährlich ÷ 6, jährlich ÷ 12)' : ''}. Gebucht wird automatisch nur in den fälligen Monaten am gewählten Tag.
+      </p>
       {rules.length === 0 ? (
         <section className="card">
           <Empty emoji="🔁" title="Noch keine Fixkosten" text="z. B. Miete, Strom, Handy, Streaming oder das Gehalt." />
         </section>
       ) : (
         <div className="card tx-card">
-          {rules.map((r) => {
+          {rules.map(({ r, next }) => {
             const c = getCategory(r.categoryId)
             const p = persons.find((x) => x.id === r.personId)
             return (
@@ -205,9 +214,14 @@ function Recurring() {
                 <span className="tx-icon" style={{ background: `color-mix(in srgb, ${c.color} 18%, transparent)` }}>{c.emoji}</span>
                 <span className="tx-main">
                   <span className="tx-title">{r.note || c.name}{!r.active && <span className="tag">pausiert</span>}</span>
-                  <span className="tx-sub">jeden {r.dayOfMonth}. · {p?.emoji} {p?.name}</span>
+                  <span className="tx-sub">
+                    {intervalInfo(intervalOf(r)).short} · {r.active ? <>nächste: {dueFmt.format(new Date(`${next}T12:00:00`))}</> : 'pausiert'} · {p?.emoji} {p?.name}
+                  </span>
                 </span>
-                <span className={`tx-amount ${r.type}`}>{r.type === 'income' ? '+' : '−'}{formatEUR(r.amountCents)}</span>
+                <span className="tx-amount-col">
+                  <span className={`tx-amount ${r.type}`}>{r.type === 'income' ? '+' : '−'}{formatEUR(r.amountCents)}</span>
+                  {intervalOf(r) !== 1 && <small className="tx-per">{intervalInfo(intervalOf(r)).per} · ≈ {formatEUR(monthlyEquivalent(r))}/Monat</small>}
+                </span>
               </button>
             )
           })}
@@ -223,6 +237,8 @@ function Recurring() {
   )
 }
 
+const dueFmt = new Intl.DateTimeFormat('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' })
+
 function RecurringEditor({ rule, onDone }: { rule?: RecurringRule; onDone: () => void }) {
   const { data } = useStore()
   const [type, setType] = useState<TxType>(rule?.type ?? 'expense')
@@ -232,10 +248,18 @@ function RecurringEditor({ rule, onDone }: { rule?: RecurringRule; onDone: () =>
   const [note, setNote] = useState(rule?.note ?? '')
   const [day, setDay] = useState(rule?.dayOfMonth ?? 1)
   const [active, setActive] = useState(rule?.active ?? true)
+  const syncState = useSync()
+  // Synced households need the server update (migration 0003) before non-monthly rules can be shared safely
+  const intervalLocked = syncState.phase === 'ready' && syncState.intervalSync === false
+  const [interval, setIntervalMonths] = useState<IntervalMonths>(rule ? intervalOf(rule) : 1)
+  const [dueMonth, setDueMonth] = useState(() => Number((rule ? nextDue(rule) : currentMonth()).slice(5, 7)))
   const cents = parseEURInput(amount)
   const valid = cents > 0 && note.trim().length > 0
   const save = () => {
-    store.saveRecurring({ id: rule?.id, type, amountCents: cents, categoryId, personId, note: note.trim(), dayOfMonth: day, startMonth: rule?.startMonth ?? currentMonth(), active })
+    // Keep the original start (= same deterministic period ids) unless the rhythm changed
+    const unchanged = rule && intervalOf(rule) === interval && (interval === 1 || Number(nextDue(rule).slice(5, 7)) === dueMonth)
+    const startMonth = unchanged ? rule.startMonth : interval === 1 ? (rule?.startMonth ?? currentMonth()) : alignStart(dueMonth, interval)
+    store.saveRecurring({ id: rule?.id, type, amountCents: cents, categoryId, personId, note: note.trim(), dayOfMonth: day, startMonth, intervalMonths: interval, active })
     showToast(rule ? 'Fixbuchung aktualisiert ✓' : '🔁 Fixbuchung angelegt – fällige Monate werden automatisch gebucht')
     onDone()
   }
@@ -261,9 +285,13 @@ function RecurringEditor({ rule, onDone }: { rule?: RecurringRule; onDone: () =>
         <span>Bezeichnung</span>
         <input value={note} onChange={(e) => setNote(e.target.value)} placeholder={type === 'income' ? 'z. B. Gehalt' : 'z. B. Miete'} maxLength={40} />
       </label>
+      <div className="field">
+        <span>Wie oft?</span>
+        <Segmented className={`interval-picker ${intervalLocked ? 'locked' : ''}`} value={String(interval)} onChange={(v) => !intervalLocked && setIntervalMonths(Number(v) as IntervalMonths)} options={INTERVALS.map((i) => ({ value: String(i.value), label: i.label }))} />
+      </div>
       <div className="field-row">
         <label className="field">
-          <span>Betrag (€)</span>
+          <span>Betrag (€){interval !== 1 ? ` ${intervalInfo(interval).per}` : ''}</span>
           <input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value.replace(/[^\d,.]/g, ''))} placeholder="0,00" />
         </label>
         <label className="field narrow">
@@ -275,6 +303,18 @@ function RecurringEditor({ rule, onDone }: { rule?: RecurringRule; onDone: () =>
           </select>
         </label>
       </div>
+      {intervalLocked && <small className="field-hint">Andere Intervalle sind nach dem nächsten Server-Update verfügbar.</small>}
+      {interval !== 1 && (
+        <label className="field">
+          <span>{interval === 12 ? 'Fällig im Monat' : 'Nächste Fälligkeit im Monat'}</span>
+          <select value={dueMonth} onChange={(e) => setDueMonth(Number(e.target.value))} aria-label="Fälligkeitsmonat">
+            {MONTH_NAMES.map((n, i) => (
+              <option key={n} value={i + 1}>{n}</option>
+            ))}
+          </select>
+          <small className="field-hint">{dueHint(interval, dueMonth, day, cents)}</small>
+        </label>
+      )}
       <div className="field">
         <span>Kategorie</span>
         <CategoryChips categories={categoriesFor(type)} value={categoryId} onChange={setCategoryId} />
@@ -301,4 +341,12 @@ function RecurringEditor({ rule, onDone }: { rule?: RecurringRule; onDone: () =>
       </div>
     </div>
   )
+}
+
+function dueHint(n: IntervalMonths, dueMonth: number, day: number, cents: number) {
+  const months = Array.from({ length: 12 / n }, (_, k) => MONTH_NAMES[(dueMonth - 1 + k * n) % 12].slice(0, 3)).sort(
+    (a, b) => MONTH_NAMES.findIndex((m) => m.startsWith(a)) - MONTH_NAMES.findIndex((m) => m.startsWith(b)),
+  )
+  const per = cents > 0 ? ` · ≈ ${formatEUR(Math.round(cents / n))} pro Monat` : ''
+  return `Gebucht am ${day}. im ${months.join(', ')}${per}`
 }

@@ -26,11 +26,13 @@ export function CategoryChips({ categories, value, onChange }: { categories: Cat
           role="radio"
           aria-checked={value === c.id}
           className={`chip ${value === c.id ? 'active' : ''}`}
+          aria-label={c.name}
+          data-name={c.name}
           style={{ ['--c' as string]: c.color }}
           onClick={() => onChange(c.id)}
         >
           <span className="chip-emoji">{c.emoji}</span>
-          <span className="chip-label">{c.name}</span>
+          <span className="chip-label">{chipLabel(c.name)}</span>
         </button>
       ))}
     </div>
@@ -161,4 +163,13 @@ export function Empty({ emoji, title, text }: { emoji: string; title: string; te
       {text && <div className="empty-text">{text}</div>}
     </div>
   )
+}
+
+// Explicit break opportunities for the narrow chip grid (CSS hyphenation is not available everywhere)
+const SOFT: Record<string, string> = {
+  Restaurant: 'Restau\u00adrant', Gesundheit: 'Gesund\u00adheit', Renovieren: 'Reno\u00advieren',
+  Geschenke: 'Ge\u00adschenke', Lieferando: 'Liefe\u00adrando', Rücklagen: 'Rück\u00adlagen', Mobilität: 'Mobi\u00adlität',
+}
+function chipLabel(name: string): string {
+  return name.replace(/\//g, '/\u200b').replace(/[A-Za-zÄÖÜäöüß]+/g, (w) => SOFT[w] ?? w)
 }

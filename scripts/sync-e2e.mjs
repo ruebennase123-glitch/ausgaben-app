@@ -51,7 +51,7 @@ const liveTx = async (page) => (await data(page)).transactions.filter((t) => !t.
 async function addExpense(page, digits, category) {
   await page.locator('.tabbar').getByText('Erfassen', { exact: true }).click()
   for (const k of digits) await page.getByRole('button', { name: k, exact: true }).click()
-  await page.locator('.chips .chip', { has: page.locator('.chip-label', { hasText: new RegExp(`^${category}$`) }) }).first().click()
+  await page.locator(`.chips .chip[data-name="${category}"]`).first().click()
   await page.locator('.btn.primary.big').click()
   await page.waitForTimeout(300)
   while (await page.locator('.celebrate-card').count()) {
@@ -101,7 +101,7 @@ try {
   // --- A: has local data from before, then signs in and creates the household
   await A.page.goto(BASE + '/')
   await A.page.getByRole('button', { name: /ohne Konto/ }).click()
-  await addExpense(A.page, ['1', '9', ',', '9', '0'], 'Lebensmittel')
+  await addExpense(A.page, ['1', '9', ',', '9', '0'], 'Einkäufe')
   await A.page.locator('.tabbar').getByText('Mehr', { exact: true }).click()
   await A.page.locator('.sync-card').getByRole('button', { name: 'Anmelden mit E-Mail' }).click()
   await login(A, users.A)
@@ -205,6 +205,24 @@ try {
   assert.equal(rows[0].n, 1)
   assert.deepEqual(local, { A: 1, B: 1 })
   log('✓ Fixkosten: auf beiden Geräten genau 1 Buchung, in der Datenbank genau 1 Zeile')
+
+  // --- interval rules (needs migration 0003 on the server; otherwise the picker is locked for synced households)
+  {
+    await A.page.getByText('Fixkosten / Einnahme hinzufügen').click()
+    const locked = await A.page.locator('.sheet .interval-picker.locked').count()
+    if (locked) {
+      assert.ok(await A.page.getByText('nach dem nächsten Server-Update').isVisible())
+      await A.page.getByText('Schließen').click()
+      log('✓ Intervall-Auswahl gesperrt, solange Migration 0003 fehlt (verhindert Doppelbuchungen)')
+    } else {
+      await A.page.getByPlaceholder('z. B. Miete').fill('Versicherung')
+      await A.page.getByPlaceholder('0,00').fill('1200')
+      await A.page.locator('.sheet .interval-picker').getByRole('radio', { name: 'Jährlich' }).click()
+      await A.page.locator('.sheet').getByText('Speichern', { exact: true }).click()
+      await B.page.waitForFunction(() => JSON.parse(localStorage.getItem('ausgaben-app:v1')).recurring.some((r) => r.note === 'Versicherung' && r.intervalMonths === 12), null, { timeout: 30000 })
+      log('✓ Jährliche Fixbuchung inkl. Intervall auf B angekommen')
+    }
+  }
 
   // --- names (settings) sync
   await A.page.locator('.tabbar').getByText('Mehr', { exact: true }).click()

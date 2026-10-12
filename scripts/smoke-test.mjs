@@ -34,9 +34,9 @@ const fabTop = await page.locator('.tab-main .tab-icon').evaluate((e) => e.getBo
 assert.ok(saveBottom <= fabTop, `Speichern-Button verdeckt (${saveBottom} > ${fabTop})`)
 console.log(`✓ Erfassen-Layout passt (Button-Unterkante ${Math.round(saveBottom)} px ≤ ${Math.round(fabTop)} px)`)
 
-// 1) Fast entry: 12,5 € Lebensmittel
+// 1) Fast entry: 12,5 € Einkäufe (id 'lebensmittel')
 for (const k of ['1', '2', ',', '5']) await page.getByRole('button', { name: k, exact: true }).click()
-await page.getByRole('radio', { name: /Lebensmittel/ }).click()
+await page.getByRole('radio', { name: /Einkäufe/ }).click()
 await page.locator('.btn.primary.big').click()
 await page.waitForSelector('.celebrate-card') // badge "Erster Eintrag"
 assert.match(await page.locator('.celebrate-title').innerText(), /Erster Eintrag/)
@@ -124,7 +124,7 @@ const dismiss = async () => { while (await page.locator('.celebrate-card').count
 await page.locator('.tabbar').getByText('Erfassen', { exact: true }).click()
 await page.getByRole('radio', { name: 'Ausgabe' }).click()
 for (const k of ['3', '0']) await page.getByRole('button', { name: k, exact: true }).click()
-await page.getByRole('radio', { name: /Lebensmittel/ }).click()
+await page.getByRole('radio', { name: /Einkäufe/ }).click()
 await page.locator('.segmented').getByRole('radio', { name: /Gemeinsam/ }).click()
 await page.locator('.btn.primary.big').click()
 await dismiss()
@@ -218,11 +218,12 @@ console.log('✓ Bezeichnung Gemeinsam editierbar')
 // 8d) New categories Renovieren + Urlaub (order: Sonstiges last)
 await page.locator('.tabbar').getByText('Erfassen', { exact: true }).click()
 await page.getByRole('radio', { name: 'Ausgabe' }).click()
-const chipNames = (await page.locator('.chips .chip-label').allInnerTexts()).map((t) => t.trim())
-assert.equal(chipNames.length, 16)
-assert.deepEqual(chipNames.slice(-7), ['Renovieren', 'Urlaub', 'Gemeinsamer Urlaub', 'Picnic', 'Lieferando', 'Dating', 'Sonstiges'])
-const chip = (scope, name) => scope.locator('.chip', { has: page.locator('.chip-label', { hasText: new RegExp(`^${name}$`) }) })
-for (const [cat, keys] of [['Renovieren', ['4', '5']], ['Urlaub', ['2', '0', '0']], ['Gemeinsamer Urlaub', ['4', '0', '0']], ['Picnic', ['6', '8']], ['Lieferando', ['3', '2']], ['Dating', ['5', '5']]]) {
+const chipNames = await page.locator('.chips .chip').evaluateAll((els) => els.map((e) => e.dataset.name))
+assert.equal(chipNames.length, 17)
+assert.equal(chipNames[0], 'Einkäufe')
+assert.deepEqual(chipNames.slice(-8), ['Renovieren', 'Urlaub', 'Gemeinsamer Urlaub', 'Picnic', 'Lieferando', 'Dating', 'Sparen/Rücklagen', 'Sonstiges'])
+const chip = (scope, name) => scope.locator(`.chip[data-name="${name}"]`)
+for (const [cat, keys] of [['Renovieren', ['4', '5']], ['Urlaub', ['2', '0', '0']], ['Gemeinsamer Urlaub', ['4', '0', '0']], ['Picnic', ['6', '8']], ['Lieferando', ['3', '2']], ['Dating', ['5', '5']], ['Sparen/Rücklagen', ['9']]]) {
   for (const k of keys) await page.getByRole('button', { name: k, exact: true }).click()
   await chip(page, cat).click()
   await page.locator('.btn.primary.big').click()
@@ -235,6 +236,8 @@ assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'urlaub
 assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'picnic').length, 1)
 assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'dating').length, 1)
 assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'lieferando').length, 1)
+assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'sparen').length, 1)
+assert.equal(d.transactions.find((t) => t.amountCents === 1250)?.categoryId ?? 'lebensmittel', 'lebensmittel')
 await page.locator('.tabbar').getByText('Übersicht', { exact: true }).click()
 const legend = (await page.locator('.legend').innerText())
 // chart legend shows the top 6 categories; these new ones are in the top 6 of this test data
@@ -257,7 +260,44 @@ await chip(page.locator('.sheet'), 'Renovieren').click()
 await page.locator('.sheet').getByText('Speichern', { exact: true }).click()
 d = await data()
 assert.equal(d.recurring.find((r) => r.note === 'Baukredit').categoryId, 'renovieren')
-console.log('✓ Neue Kategorien Renovieren/Urlaub/Gemeinsamer Urlaub/Picnic/Lieferando/Dating: Chips, Diagramm, Budget, Fixkosten')
+console.log('✓ Kategorien: Einkäufe (umbenannt, gleiche id), Sparen/Rücklagen neu, Sonstiges zuletzt; Chips, Diagramm, Budget, Fixkosten')
+
+// 8e) Fixkosten-Intervall: jährlich fällig in diesem Monat (Tag 1) → 1 Buchung; vierteljährlich ab nächstem Monat → noch keine
+{
+  const now = new Date()
+  const monthName = (m) => ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'][m % 12]
+  const addRule = async (note, amount, interval, dueMonthIdx) => {
+    await page.getByText('Fixkosten / Einnahme hinzufügen').click()
+    await page.getByPlaceholder('z. B. Miete').fill(note)
+    await page.getByPlaceholder('0,00').fill(amount)
+    await page.locator('.sheet .interval-picker').getByRole('radio', { name: interval }).click()
+    await page.locator('.sheet select[aria-label="Fälligkeitsmonat"]').selectOption({ label: monthName(dueMonthIdx) })
+    await page.locator('.sheet').getByText('Speichern', { exact: true }).click()
+  }
+  await addRule('Versicherung', '1200', 'Jährlich', now.getMonth())
+  await addRule('Rundfunkbeitrag', '55,08', 'Quartal', now.getMonth() + 1)
+  d = await data()
+  const ins = d.recurring.find((r) => r.note === 'Versicherung')
+  const gez = d.recurring.find((r) => r.note === 'Rundfunkbeitrag')
+  assert.equal(ins.intervalMonths, 12)
+  assert.equal(gez.intervalMonths, 3)
+  assert.equal(d.transactions.filter((t) => t.recurringId === ins.id).length, 1, 'jährlich: fällig diesen Monat → 1 Buchung')
+  assert.equal(d.transactions.filter((t) => t.recurringId === gez.id).length, 0, 'Quartal ab nächstem Monat → noch keine Buchung')
+  assert.ok(d.recurring.filter((r) => r.note === 'Miete').every((r) => (r.intervalMonths ?? 1) === 1), 'bestehende Regeln bleiben monatlich')
+  await page.reload()
+  await page.waitForSelector('.tabbar')
+  d = await data()
+  assert.equal(d.transactions.filter((t) => t.recurringId === ins.id).length, 1, 'keine Doppelbuchung nach Neustart')
+  await page.locator('.tabbar').getByText('Planen', { exact: true }).click()
+  await page.getByRole('radio', { name: /Fixkosten/ }).click()
+  const row = page.locator('.tx-row', { hasText: 'Versicherung' })
+  assert.match(await row.innerText(), /jährlich/)
+  assert.match(await row.innerText(), /nächste: \d\d\.\d\d\.\d{4}/)
+  assert.match(await row.innerText(), /100,00\s€\/Monat/)
+  assert.match(await page.locator('.tx-row', { hasText: 'Rundfunkbeitrag' }).innerText(), /vierteljährlich/)
+  assert.match(await page.locator('.fix-summary').innerText(), /Fixkosten \/ Monat/)
+  console.log('✓ Fixkosten-Intervalle: jährlich/Quartal nur in fälligen Monaten, nächste Fälligkeit + Monatsanteil angezeigt')
+}
 
 // 9) Rename person, export, reset, import
 await page.locator('.tabbar').getByText('Mehr', { exact: true }).click()

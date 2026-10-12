@@ -57,7 +57,7 @@ async function tab(page, label) {
   await page.waitForSelector('.keypad')
   await shot(page, '01-erfassen-leer.png')
   for (const k of ['2', '4', ',', '9', '0']) await page.getByRole('button', { name: k, exact: true }).click()
-  await page.getByRole('radio', { name: /Lebensmittel/ }).click()
+  await page.getByRole('radio', { name: /Einkäufe/ }).click()
   await page.fill('.note-input', 'Wochenmarkt')
   await shot(page, '02-erfassen-ausgefuellt.png')
 

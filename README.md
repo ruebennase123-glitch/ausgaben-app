@@ -83,6 +83,14 @@ Laufzeit-Abhängigkeiten: React und `@supabase/supabase-js`. Beträge werden als
 - Erlaubte Weiterleitungen: `https://ruebennase123-glitch.github.io/ausgaben-app/**`, `http://localhost:5173/**`,
   `http://localhost:4173/**` (`supabase/auth-config.json`).
 
+- **Migrationen**: `0001`/`0002` (Schema, Login-Übergabe) sind angewendet. `0003_recurring_interval.sql` (Spalte
+  `interval_months`, Default 1 = monatlich, plus Schutz-Trigger gegen Buchungen älterer App-Versionen in nicht fälligen
+  Monaten) und `0004_switch_household.sql` („Anderem Haushalt beitreten“) sind abwärtskompatibel und werden per
+  Management-API angewendet (`POST /v1/projects/<ref>/database/query`). Die App erkennt selbst, ob `0003` aktiv ist:
+  vorher sind in verbundenen Haushalten nur monatliche Fixbuchungen wählbar.
+- **Haushalt wechseln**: „Mehr → Gemeinsam synchronisieren → Anderem Haushalt beitreten“ (nur wenn man allein im
+  bisherigen Haushalt ist; der leere Haushalt wird aufgelöst, lokale Einträge können übernommen werden).
+
 ### So richtet ihr es auf euren iPhones ein
 
 1. Beide: https://ruebennase123-glitch.github.io/ausgaben-app/ in **Safari** öffnen → Teilen → „Zum Home-Bildschirm“.
@@ -90,7 +98,7 @@ Laufzeit-Abhängigkeiten: React und `@supabase/supabase-js`. Beträge werden als
 2. **Person 1**: „Anmelden mit E-Mail“ → E-Mail eingeben → „Anmeldelink senden“. In der Mail-App auf den Link
    tippen (Mail ist auf Englisch, Absender „Supabase Auth“, ggf. im Spam-Ordner nachsehen). Safari zeigt
    „Angemeldet!“ → zurück zur Haushaltsbuch-App, sie meldet sich automatisch an.
-3. Person 1: „Haushalt erstellen“ → den angezeigten **Einladungscode** (6 Zeichen) per „Code teilen“ schicken.
+3. Person 1 (nur eine von euch!): „Haushalt erstellen“ → den angezeigten **Einladungscode** (6 Zeichen) per „Code teilen“ schicken.
 4. **Person 2**: genauso anmelden (eigene E-Mail-Adresse) → „Mit Code beitreten“ → Code eingeben.
 5. Fertig. Der Wolken-Status oben rechts zeigt ✓ (synchron), ⨯ (offline, wird später nachgeholt) oder einen Kreis
    (synchronisiert gerade). Unter „Mehr → Gemeinsam synchronisieren“: Status, Code, „Jetzt synchronisieren“, „Abmelden“.

@@ -43,6 +43,8 @@ export interface SyncState {
   handoff?: 'done' | 'error'
   /** The linked household disappeared (e.g. removed) – show the create/join choice again. */
   householdGone?: boolean
+  /** Server has the Fixkosten-interval column (migration 0003). undefined = not checked yet. */
+  intervalSync?: boolean
 }
 interface Meta {
   userId: string
@@ -364,6 +366,7 @@ class SyncEngine {
     this.running = true
     this.set({ net: 'syncing' })
     try {
+      if (this.state.intervalSync !== true) await this.probeFeatures()
       await this.pull()
       await this.push()
       this.set({ net: 'idle', lastSyncAt: new Date().toISOString(), error: undefined })
@@ -377,6 +380,14 @@ class SyncEngine {
         this.schedule('rerun', 300)
       }
     }
+  }
+
+  /** Feature detection so this app version also works before/without migration 0003. */
+  private async probeFeatures() {
+    const { error } = await this.sb.from('recurring_rules').select('interval_months').limit(1)
+    if (!error) return this.set({ intervalSync: true })
+    if (error.code === '42703' || /interval_months/.test(error.message)) return this.set({ intervalSync: false })
+    throw error
   }
 
   private async fetchSince(table: Table, hid: string, since?: string): Promise<{ rows: Row[]; max?: string }> {
@@ -456,7 +467,12 @@ class SyncEngine {
       }
     }
     const rules = changed(d.recurring, 'rule')
-    await up('recurring_rules', rules.map((r) => ruleRow(r, hid)), rules.map((r) => `rule:${r.id}`), rules.map((r) => ts(r.updatedAt)))
+    const ruleRows = rules.map((r) => {
+      const row = ruleRow(r, hid)
+      if (!this.state.intervalSync) delete row.interval_months
+      return row
+    })
+    await up('recurring_rules', ruleRows, rules.map((r) => `rule:${r.id}`), rules.map((r) => ts(r.updatedAt)))
     const goals = changed(d.goals, 'goal')
     await up('savings_goals', goals.map((g) => goalRow(g, hid)), goals.map((g) => `goal:${g.id}`), goals.map((g) => ts(g.updatedAt)))
     const contribs = d.goals.filter((g) => isUuid(g.id)).flatMap((g) => g.contributions.filter((c) => isUuid(c.id) && !v[`contrib:${c.id}`]).map((c) => ({ c, g })))
