@@ -173,7 +173,7 @@ export function Empty({ emoji, title, text }: { emoji: string; title: string; te
 // Explicit break opportunities for the narrow chip grid (CSS hyphenation is not available everywhere)
 const SOFT: Record<string, string> = {
   Restaurant: 'Restau\u00adrant', Gesundheit: 'Gesund\u00adheit', Renovieren: 'Reno\u00advieren',
-  Geschenke: 'Ge\u00adschenke', Lieferando: 'Liefe\u00adrando', Rücklagen: 'Rück\u00adlagen', Mobilität: 'Mobi\u00adlität',
+  Geschenke: 'Ge\u00adschenke', Lieferando: 'Liefe\u00adrando', Rücklagen: 'Rück\u00adlagen', Mobilität: 'Mobi\u00adlität', Versicherungen: 'Versiche\u00adrungen',
 }
 function chipLabel(name: string): string {
   return name.replace(/\//g, '/\u200b').replace(/[A-Za-zÄÖÜäöüß]+/g, (w) => SOFT[w] ?? w)

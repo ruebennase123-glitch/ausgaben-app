@@ -41,7 +41,7 @@ export function buildSeed(now = new Date()) {
     [-4, 'expense', 64.9, 'renovieren', 'joint', 'Farbe + Pinsel Baumarkt'],
     [-9, 'expense', 189.0, 'urlaub-gemeinsam', 'joint', 'Ferienwohnung Anzahlung'],
     [-12, 'expense', 45.0, 'urlaub', 'p1', 'Wochenende Hamburg Zugticket'],
-    [-3, 'expense', 73.4, 'picnic', 'joint', 'Wocheneinkauf geliefert'],
+    [-3, 'expense', 73.4, 'lebensmittel', 'joint', 'Wocheneinkauf geliefert'],
     [-10, 'expense', 27.5, 'lieferando', 'p2', 'Pizza-Abend'],
     [-1, 'expense', 38.0, 'dating', 'p1', 'Date-Night Weinbar'],
     [-8, 'expense', 34.5, 'freizeit', 'p2', 'Kletterhalle'],

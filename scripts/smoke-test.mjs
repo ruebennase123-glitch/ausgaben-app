@@ -192,7 +192,7 @@ console.log('✓ Bezeichnung Gemeinsam editierbar')
   const iso = (x) => `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, '0')}-${String(x.getDate()).padStart(2, '0')}`
   const tx = (o, person) => ({ id: 'legacy-' + o + person, createdAt: day(o).toISOString(), updatedAt: day(o).toISOString(), type: 'expense', amountCents: 1000, categoryId: 'lebensmittel', personId: person, date: iso(day(o)) })
   const legacy = {
-    schemaVersion: 1, transactions: [tx(-2, 'p1'), { ...tx(-2, 'p1'), id: 'legacy-trip', categoryId: 'urlaub-gemeinsam', amountCents: 18900 }], recurring: [], goals: [], checkins: [], budgets: { 'urlaub-gemeinsam': { categoryId: 'urlaub-gemeinsam', limitCents: 50000, updatedAt: day(-2).toISOString() } }, badges: { first_entry: day(-2).toISOString() },
+    schemaVersion: 1, transactions: [tx(-2, 'p1'), { ...tx(-2, 'p1'), id: 'legacy-trip', categoryId: 'urlaub-gemeinsam', amountCents: 18900 }, { ...tx(-2, 'p1'), id: 'legacy-picnic', categoryId: 'picnic', amountCents: 4321 }], recurring: [], goals: [], checkins: [], budgets: { 'urlaub-gemeinsam': { categoryId: 'urlaub-gemeinsam', limitCents: 50000, updatedAt: day(-2).toISOString() }, picnic: { categoryId: 'picnic', limitCents: 30000, updatedAt: day(-2).toISOString() } }, badges: { first_entry: day(-2).toISOString() },
     settings: { persons: [{ id: 'p1', name: 'Max', emoji: '😎' }, { id: 'p2', name: 'Lea', emoji: '🌸' }], theme: 'light', lastPersonId: 'p2', updatedAt: day(-2).toISOString() },
   }
   await p2.addInitScript((j) => { if (!sessionStorage.getItem('s')) { localStorage.setItem('ausgaben-app:v1', j); sessionStorage.setItem('s', '1') } }, JSON.stringify(legacy))
@@ -208,8 +208,14 @@ console.log('✓ Bezeichnung Gemeinsam editierbar')
   assert.ok(!trip.deleted)
   assert.equal(m.budgets.urlaub.limitCents, 50000)
   assert.equal(m.budgets['urlaub-gemeinsam'].limitCents, 0)
-  m.transactions = m.transactions.filter((t) => t.id !== 'legacy-trip')
-  console.log('✓ Migration alter Daten (joint ergänzt, „Gemeinsamer Urlaub“ → „Urlaub“ inkl. Budget, nichts gelöscht)')
+  const pic = m.transactions.find((t) => t.id === 'legacy-picnic')
+  assert.equal(pic.categoryId, 'lebensmittel')
+  assert.equal(pic.amountCents, 4321)
+  assert.ok(!pic.deleted)
+  assert.equal(m.budgets.lebensmittel.limitCents, 30000)
+  assert.equal(m.budgets.picnic.limitCents, 0)
+  m.transactions = m.transactions.filter((t) => t.id !== 'legacy-trip' && t.id !== 'legacy-picnic')
+  console.log('✓ Migration alter Daten (joint ergänzt, „Gemeinsamer Urlaub“ → „Urlaub“, „Picnic“ → „Einkäufe“ inkl. Budget, nichts gelöscht)')
   // joint entries yesterday + today -> shared streak 3 (incl. p1 on day -2); per-person streaks stay 0
   m.transactions.push(tx(-1, 'joint'), tx(0, 'joint'))
   await p2.evaluate((j) => localStorage.setItem('ausgaben-app:v1', j), JSON.stringify(m))
@@ -226,13 +232,13 @@ console.log('✓ Bezeichnung Gemeinsam editierbar')
 await page.locator('.tabbar').getByText('Erfassen', { exact: true }).click()
 await page.getByRole('radio', { name: 'Ausgabe' }).click()
 const chipNames = await page.locator('.chips .chip').evaluateAll((els) => els.map((e) => e.dataset.name))
-assert.equal(chipNames.length, 18)
+assert.equal(chipNames.length, 17)
 assert.equal(chipNames[0], 'Einkäufe')
 assert.ok(chipNames.includes('Shopping') && !chipNames.includes('Kleidung'))
 assert.ok(!chipNames.includes('Gemeinsamer Urlaub'), 'Gemeinsamer Urlaub nicht mehr wählbar')
-assert.deepEqual(chipNames.slice(-9), ['Renovieren', 'Urlaub', 'Picnic', 'Lieferando', 'Dating', 'Beauty', 'Versicherungen', 'Sparen/Rücklagen', 'Sonstiges'])
+assert.deepEqual(chipNames.slice(-9), ['Geschenke', 'Renovieren', 'Urlaub', 'Lieferando', 'Dating', 'Beauty', 'Versicherungen', 'Sparen/Rücklagen', 'Sonstiges'])
 const chip = (scope, name) => scope.locator(`.chip[data-name="${name}"]`)
-for (const [cat, keys] of [['Renovieren', ['4', '5']], ['Urlaub', ['2', '0', '0']], ['Beauty', ['4', '0', '0']], ['Versicherungen', ['3', '3']], ['Picnic', ['6', '8']], ['Lieferando', ['3', '2']], ['Dating', ['5', '5']], ['Sparen/Rücklagen', ['9']]]) {
+for (const [cat, keys] of [['Renovieren', ['4', '5']], ['Urlaub', ['2', '0', '0']], ['Beauty', ['4', '0', '0']], ['Versicherungen', ['3', '3']], ['Geschenke', ['6', '8']], ['Lieferando', ['3', '2']], ['Dating', ['5', '5']], ['Sparen/Rücklagen', ['9']]]) {
   for (const k of keys) await page.getByRole('button', { name: k, exact: true }).click()
   await chip(page, cat).click()
   await page.locator('.btn.primary.big').click()
@@ -243,7 +249,7 @@ assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'renovi
 assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'urlaub').length, 1)
 assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'beauty').length, 1)
 assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'versicherungen').length, 1)
-assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'picnic').length, 1)
+assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'geschenke').length, 1)
 assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'dating').length, 1)
 assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'lieferando').length, 1)
 assert.equal(d.transactions.filter((t) => !t.deleted && t.categoryId === 'sparen').length, 1)
@@ -251,7 +257,7 @@ assert.equal(d.transactions.find((t) => t.amountCents === 1250)?.categoryId ?? '
 await page.locator('.tabbar').getByText('Übersicht', { exact: true }).click()
 const legend = (await page.locator('.legend').innerText())
 // chart legend shows the top 6 categories; these new ones are in the top 6 of this test data
-for (const c of ['Beauty', 'Urlaub', 'Picnic', 'Renovieren']) assert.ok(legend.includes(c), legend)
+for (const c of ['Beauty', 'Urlaub', 'Geschenke', 'Renovieren']) assert.ok(legend.includes(c), legend)
 const colors = await page.locator('.donut circle[stroke^="#"]').evaluateAll((els) => els.map((e) => e.getAttribute('stroke')))
 assert.equal(new Set(colors).size, colors.length, 'distinct chart colors')
 await page.locator('.tabbar').getByText('Planen', { exact: true }).click()
@@ -369,7 +375,7 @@ console.log('✓ Kategorien: Einkäufe (umbenannt, gleiche id), Sparen/Rücklage
   assert.ok((await page.locator('.tx-list .tx-row').count()) >= 1, 'Betragssuche')
   await search.fill('')
   await page.getByRole('button', { name: /^Filter/ }).click()
-  await page.locator('.fchip[data-cat="picnic"]').click()
+  await page.locator('.fchip[data-cat="geschenke"]').click()
   await page.locator('.fchip[data-cat="dating"]').click()
   assert.equal(await page.locator('.tx-list .tx-row').count(), 2)
   assert.match(await page.locator('.search-summary').innerText(), /2 Treffer · Ausgaben −1(23|23),00\s€/)
@@ -378,7 +384,7 @@ console.log('✓ Kategorien: Einkäufe (umbenannt, gleiche id), Sparen/Rücklage
   // person filter combines
   await page.locator('.person-filter').getByRole('radio', { name: /Gemeinsam/ }).click()
   const jointHits = await page.locator('.tx-list .tx-row').count()
-  assert.equal(jointHits, allTx.filter((t) => ['picnic', 'dating'].includes(t.categoryId) && t.personId === 'joint').length)
+  assert.equal(jointHits, allTx.filter((t) => ['geschenke', 'dating'].includes(t.categoryId) && t.personId === 'joint').length)
   await page.locator('.person-filter').getByRole('radio', { name: /Beide/ }).click()
   await page.getByText('Filter zurücksetzen').click()
   assert.equal(await page.locator('.search-summary').count(), 0)

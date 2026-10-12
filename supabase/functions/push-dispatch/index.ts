@@ -12,7 +12,7 @@ const TZ = 'Europe/Berlin'
 
 const CAT: Record<string, string> = {
   lebensmittel: 'Einkäufe', wohnen: 'Wohnen', mobilitaet: 'Mobilität', freizeit: 'Freizeit', restaurant: 'Restaurant', gesundheit: 'Gesundheit',
-  kleidung: 'Shopping', abos: 'Abos', geschenke: 'Geschenke', renovieren: 'Renovieren', urlaub: 'Urlaub', 'urlaub-gemeinsam': 'Urlaub', picnic: 'Picnic',
+  kleidung: 'Shopping', abos: 'Abos', geschenke: 'Geschenke', renovieren: 'Renovieren', urlaub: 'Urlaub', 'urlaub-gemeinsam': 'Urlaub', picnic: 'Einkäufe',
   lieferando: 'Lieferando', dating: 'Dating', beauty: 'Beauty', versicherungen: 'Versicherungen', sparen: 'Sparen/Rücklagen', sonstiges: 'Sonstiges',
 }
 const MONTHS = ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']

@@ -159,9 +159,9 @@ try {
 
   // --- Live: entry on A appears on B
   const t1 = Date.now()
-  await addExpense(A.page, ['2', '3', ',', '4', '5'], 'Picnic')
-  await B.page.waitForFunction(() => JSON.parse(localStorage.getItem('ausgaben-app:v1')).transactions.some((t) => t.amountCents === 2345 && t.categoryId === 'picnic' && !t.deleted), null, { timeout: 30000 })
-  log(`✓ Buchung von A (23,45 € Picnic) erscheint auf B nach ${((Date.now() - t1) / 1000).toFixed(1)} s`)
+  await addExpense(A.page, ['2', '3', ',', '4', '5'], 'Geschenke')
+  await B.page.waitForFunction(() => JSON.parse(localStorage.getItem('ausgaben-app:v1')).transactions.some((t) => t.amountCents === 2345 && t.categoryId === 'geschenke' && !t.deleted), null, { timeout: 30000 })
+  log(`✓ Buchung von A (23,45 € Geschenke) erscheint auf B nach ${((Date.now() - t1) / 1000).toFixed(1)} s`)
   await B.page.locator('.tabbar').getByText('Übersicht', { exact: true }).click()
   await B.page.getByText('23,45').first().waitFor()
   await B.page.screenshot({ path: 'screenshots/sync-b-uebersicht.png' })

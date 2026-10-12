@@ -14,7 +14,6 @@ export const CATEGORIES: Category[] = [
   { id: 'geschenke', name: 'Geschenke', emoji: '🎁', type: 'expense', color: '#f97316' },
   { id: 'renovieren', name: 'Renovieren', emoji: '🛠️', type: 'expense', color: '#a16207' },
   { id: 'urlaub', name: 'Urlaub', emoji: '🏖️', type: 'expense', color: '#0891b2' },
-  { id: 'picnic', name: 'Picnic', emoji: '🥕', type: 'expense', color: '#4d7c0f' }, // online grocery delivery
   { id: 'lieferando', name: 'Lieferando', emoji: '🛵', type: 'expense', color: '#be185d' }, // food delivery
   { id: 'dating', name: 'Dating', emoji: '🥂', type: 'expense', color: '#d946ef' },
   { id: 'beauty', name: 'Beauty', emoji: '💄', type: 'expense', color: '#f9a8d4' },
@@ -27,7 +26,7 @@ export const CATEGORIES: Category[] = [
 ]
 
 /** Retired categories: existing records are moved to the target category (see migrateCategories). */
-export const RETIRED: Record<string, string> = { 'urlaub-gemeinsam': 'urlaub' }
+export const RETIRED: Record<string, string> = { 'urlaub-gemeinsam': 'urlaub', picnic: 'lebensmittel' }
 
 const byId = new Map(CATEGORIES.map((c) => [c.id, c]))
 
