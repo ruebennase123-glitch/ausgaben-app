@@ -38,6 +38,12 @@ export function buildSeed(now = new Date()) {
     [-5, 'expense', 19.95, 'gesundheit', 'p2', 'Apotheke'],
     [-6, 'expense', 112.6, 'lebensmittel', 'joint', 'Großeinkauf dm + Aldi'],
     [-7, 'expense', 29.0, 'geschenke', 'p1', 'Geburtstag Mama'],
+    [-4, 'expense', 64.9, 'renovieren', 'joint', 'Farbe + Pinsel Baumarkt'],
+    [-9, 'expense', 189.0, 'urlaub-gemeinsam', 'joint', 'Ferienwohnung Anzahlung'],
+    [-12, 'expense', 45.0, 'urlaub', 'p1', 'Wochenende Hamburg Zugticket'],
+    [-3, 'expense', 73.4, 'picnic', 'joint', 'Wocheneinkauf geliefert'],
+    [-10, 'expense', 27.5, 'lieferando', 'p2', 'Pizza-Abend'],
+    [-1, 'expense', 38.0, 'dating', 'p1', 'Date-Night Weinbar'],
     [-8, 'expense', 34.5, 'freizeit', 'p2', 'Kletterhalle'],
     [-8, 'expense', 22.3, 'lebensmittel', 'p1', 'Edeka'],
     [-9, 'expense', 41.2, 'restaurant', 'p2', 'Thai Imbiss'],
@@ -89,7 +95,7 @@ export function buildSeed(now = new Date()) {
 
   const b = (cat, eur) => [cat, { categoryId: cat, limitCents: eur * 100, updatedAt: t0 }]
   const budgets = Object.fromEntries([
-    b('lebensmittel', 450), b('restaurant', 150), b('freizeit', 120), b('kleidung', 100), b('mobilitaet', 200), b('abos', 60), b('gesundheit', 60),
+    b('lebensmittel', 450), b('restaurant', 150), b('freizeit', 120), b('kleidung', 100), b('mobilitaet', 200), b('abos', 60), b('gesundheit', 60), b('urlaub', 250),
   ])
 
   const contrib = (person, eur, off) => ({ id: id('c'), personId: person, amountCents: eur * 100, date: iso(day(off)) })

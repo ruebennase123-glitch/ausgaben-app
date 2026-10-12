@@ -1,5 +1,6 @@
 import type { Category, TxType } from '../types'
 
+// Categories are referenced by stable `id` only, so adding new ones needs no data migration.
 export const CATEGORIES: Category[] = [
   { id: 'lebensmittel', name: 'Lebensmittel', emoji: '🛒', type: 'expense', color: '#22c55e' },
   { id: 'wohnen', name: 'Wohnen', emoji: '🏠', type: 'expense', color: '#6366f1' },
@@ -10,6 +11,13 @@ export const CATEGORIES: Category[] = [
   { id: 'kleidung', name: 'Kleidung', emoji: '👕', type: 'expense', color: '#ec4899' },
   { id: 'abos', name: 'Abos', emoji: '📺', type: 'expense', color: '#8b5cf6' },
   { id: 'geschenke', name: 'Geschenke', emoji: '🎁', type: 'expense', color: '#f97316' },
+  { id: 'renovieren', name: 'Renovieren', emoji: '🛠️', type: 'expense', color: '#a16207' },
+  { id: 'urlaub', name: 'Urlaub', emoji: '🏖️', type: 'expense', color: '#0891b2' },
+  { id: 'urlaub-gemeinsam', name: 'Gemeinsamer Urlaub', emoji: '✈️', type: 'expense', color: '#1e40af' },
+  { id: 'picnic', name: 'Picnic', emoji: '🥕', type: 'expense', color: '#4d7c0f' }, // online grocery delivery
+  { id: 'lieferando', name: 'Lieferando', emoji: '🛵', type: 'expense', color: '#be185d' }, // food delivery
+  { id: 'dating', name: 'Dating', emoji: '🥂', type: 'expense', color: '#d946ef' },
+  // 'Sonstiges' must stay the last expense category.
   { id: 'sonstiges', name: 'Sonstiges', emoji: '📦', type: 'expense', color: '#64748b' },
   { id: 'gehalt', name: 'Gehalt', emoji: '💼', type: 'income', color: '#10b981' },
   { id: 'einnahme-sonstiges', name: 'Sonstiges', emoji: '💶', type: 'income', color: '#84cc16' },
