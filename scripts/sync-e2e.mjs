@@ -43,6 +43,7 @@ async function device(name) {
   const page = await ctx.newPage()
   page.on('pageerror', (e) => errors.push(`${name}: ${e.message}`))
   page.on('dialog', (d) => d.accept())
+  if (process.env.DEBUG_CONSOLE) page.on('console', (m) => ['warning', 'error'].includes(m.type()) && console.log(`  [${name} console] ${m.text().slice(0, 300)}`))
   return { ctx, page, name }
 }
 const data = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('ausgaben-app:v1')))
@@ -150,6 +151,7 @@ try {
   await B.page.getByText('Ihr seid verbunden').waitFor({ timeout: 20000 })
   await B.page.getByRole('button', { name: 'Los geht’s' }).click()
   log('B: mit Code beigetreten → „Ihr seid verbunden 🎉“')
+  if (process.env.DEBUG_CONSOLE) { await B.page.waitForTimeout(6000); console.log('B dbg', await B.page.evaluate(() => JSON.stringify({ meta: JSON.parse(localStorage.getItem('ausgaben-app:sync')), n: JSON.parse(localStorage.getItem('ausgaben-app:v1')).transactions.length, badge: document.querySelector('.sync-badge')?.className, overlay: !!document.querySelector('.auth-overlay'), text: document.querySelector('.auth-overlay')?.innerText?.slice(0, 200) }))) }
   await B.page.waitForFunction(() => JSON.parse(localStorage.getItem('ausgaben-app:v1')).transactions.some((t) => t.amountCents === 1990), null, { timeout: 20000 })
   const bSettings = (await data(B.page)).settings
   assert.equal(bSettings.lastPersonId, 'p2', 'B ist Person 2')

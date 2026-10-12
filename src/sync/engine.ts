@@ -414,6 +414,8 @@ class SyncEngine {
     const { data: hh, error: he } = await this.sb.rpc('my_household')
     if (he) throw he
     const h = (hh as Row[])[0]
+    // Household switched/linked while this pull was in flight: drop this stale run
+    if (this.meta?.householdId !== hid) return false
     if (!h || h.household_id !== hid) {
       // removed from household
       this.saveMeta(null)
@@ -434,6 +436,7 @@ class SyncEngine {
       batch[t] = rows
       if (max) cursors[t] = max
     }
+    if (this.meta?.householdId !== hid) return false
     const versions = { ...meta.versions }
     const merged = mergeRemote(store.getData(), batch, versions)
     if (merged !== store.getData()) store.applyRemote(() => merged)
